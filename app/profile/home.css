@@ -1,0 +1,245 @@
+.home-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #4267B2; 
+    overflow: hidden; 
+    position: fixed; 
+    top: 0;
+    left: 0;
+    right: 0; 
+}
+
+.home-header {
+    background-color: #4267B2; 
+    color: white;
+    padding: 15px 30px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    position: fixed; 
+    top: 0;
+    left: 0;
+    right: 0; 
+    z-index: 10; 
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.home-header h1 {
+    flex-grow: 1;
+    /* margin: 0; */
+}
+
+.header-buttons {
+    display: flex;
+    align-items: center;
+    /* gap: 10px; */
+}
+
+.header-buttons button {
+    background: none;
+    border: none;
+    padding: 0;
+    /* margin-left: 10px; */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+
+.messenger-button{
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    margin-right: 115px;
+    position: absolute; 
+    right: 40px;
+}
+
+.notification-button{
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    margin-right: 115px;
+    position: absolute; 
+    right: 100px;
+}
+
+.profile-pic {
+    border-radius: 50%;
+    margin-right: 15x;
+    position:absolute;
+    top: 15px;
+    left: 50px;
+}
+
+.home-sidebar-left,
+.home-sidebar-right {
+    
+    width: 250px;
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    margin-top: 130px; 
+    position: fixed; 
+    height: calc(100vh - 60px); 
+    overflow-y: auto; 
+   
+}
+
+.home-sidebar-left ul,
+.home-sidebar-right ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.home-sidebar-left {
+    left: 0; 
+   
+}
+
+.home-sidebar-right {
+    right: 0; 
+}
+
+
+.home-sidebar-left li,
+.home-sidebar-right li {
+    font-size: 18px;
+    padding: 10px;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.home-sidebar-left li:hover ,
+.home-sidebar-right li:hover {
+    background-color: #e9ecef;
+    border-radius: 4px;
+}
+
+.home-content {
+ 
+    flex-grow: 1;
+    margin-left: 280px;
+    margin-right: 280px;
+    padding: 50px;
+    margin-top: 130px; 
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.post-section {
+    margin-bottom: 40px;
+}
+
+.post-section textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.post-button {
+    background-color: #4267b2;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.post-button:hover {
+    background-color: #365899;
+}
+
+.timeline-section {
+    margin-top: 20px;
+}
+
+.timeline-section .post {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-section .post h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.timeline-section .post p {
+    font-size: 16px;
+    color: #666;
+}
+
+/* Responsive layout for mobile */
+@media (max-width: 768px) {
+    .home-container {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .home-sidebar-left,
+    .home-sidebar-right {
+        width: 100%;
+        margin-top: 0;
+        position: relative; 
+        height: auto; 
+    }
+
+    .home-header {
+        width: 100%;
+    }
+
+    .home-content {
+        margin-left: 0; 
+    }
+}
+
+
+.logout-button {
+    position: absolute;
+    top: 45px;
+    right: 30px;
+    background-color: #004080;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.logout-button:hover {
+    background-color: #242eb6;
+}
+
+.back-button{
+    background-color: #4267b2;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;;
+    
+    }
+    
+   .back-button:hover{
+    background-color: #365899;
+    }
+
+    .user-activity{
+       margin-top:50px;
+    }
