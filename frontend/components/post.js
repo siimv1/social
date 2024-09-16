@@ -6,7 +6,7 @@ const PostComponent = () => {
 
   // Fetch posts when the component loads
   useEffect(() => {
-    fetch('/api/posts') // Assuming '/api/posts' is the correct endpoint
+    fetch('http://localhost:8080/backend/pkg/api') // Change to your Go backend API URL
       .then((res) => res.json())
       .then((data) => setPosts(data))
       .catch((error) => console.error('Error fetching posts:', error));
@@ -16,7 +16,7 @@ const PostComponent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const response = await fetch('/api/posts', {
+    const response = await fetch('http://localhost:8080/backend/pkg/api', { // Ensure this URL points to your backend
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),
@@ -25,7 +25,7 @@ const PostComponent = () => {
     if (response.ok) {
       const newPost = await response.json();
       setPosts([newPost, ...posts]); // Update the post list with the new post
-      setContent('');                // Clear the input field
+      setContent(''); // Clear the input field
     } else {
       console.error('Error creating post');
     }
