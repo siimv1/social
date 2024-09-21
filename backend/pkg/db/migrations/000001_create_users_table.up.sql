@@ -8,5 +8,6 @@ CREATE TABLE IF NOT EXISTS users (
     avatar TEXT,
     nickname TEXT,
     about_me TEXT,
+    is_online BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

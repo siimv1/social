@@ -35,12 +35,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
+
 	var loginReq LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-	// Fetch the user from the database
+
+	// Fetch user from the database
 	var userID int
 	var hashedPassword string
 	query := `SELECT id, password FROM users WHERE email = ?`
@@ -49,28 +51,27 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User not found", http.StatusUnauthorized)
 		return
 	}
-	// Compare the hashed password with the provided password
+
+	// Compare passwords
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(loginReq.Password)); err != nil {
 		http.Error(w, "Invalid password", http.StatusUnauthorized)
 		return
 	}
-	// Generate a session token
+
+	// Generate session token (you can use JWT or session-based)
 	sessionToken, err := generateSessionToken()
 	if err != nil {
 		http.Error(w, "Failed to generate session token", http.StatusInternalServerError)
 		return
 	}
-	// Store the session token in memory (map) for now
+
+	// Store session token in your in-memory store
 	sessionStore[sessionToken] = loginReq.Email
-	// Set the session token as a cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:  "session_token",
-		Value: sessionToken,
-		Path:  "/",
-	})
-	// Respond with success
+
+	// Return token in response (instead of a cookie, use Authorization header)
+	w.Header().Set("Authorization", "Bearer "+sessionToken)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful"})
+	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful", "token": sessionToken})
 }
 
 // LogoutHandler logs the user out by deleting the session token

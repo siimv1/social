@@ -1,9 +1,9 @@
-CREATE TABLE IF NOT EXISTS followers (
+CREATE TABLE followers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
     follower_id INTEGER NOT NULL,
-    status TEXT CHECK(status IN ('pending', 'accepted')),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id),
-    FOREIGN KEY(follower_id) REFERENCES users(id)
+    followed_id INTEGER NOT NULL,
+    status TEXT DEFAULT 'accepted', -- Jälgimise olek: accepted, pending, rejected
+    FOREIGN KEY (follower_id) REFERENCES users(id),
+    FOREIGN KEY (followed_id) REFERENCES users(id),
+    UNIQUE(follower_id, followed_id) -- Tagab, et sama kasutaja ei saa sama kasutajat uuesti järgida
 );

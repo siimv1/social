@@ -15,7 +15,7 @@ const Login = () => {
         e.preventDefault();
         setLoading(true);
         setError('');
-    
+        
         try {
             const response = await fetch('http://localhost:8080/login', {
                 method: 'POST',
@@ -27,16 +27,25 @@ const Login = () => {
     
             if (response.ok) {
                 const data = await response.json();
-                console.log('Login data:', data);
+                console.log('Login data:', data); // Kontrollime, kas token saadeti vastuses
+    
+                // Salvestame tokeni localStorage'sse
+                localStorage.setItem('token', data.token);
+    
+                // Kontrollime, kas token on localStorage's
+                const storedToken = localStorage.getItem('token');
+                console.log('Stored token:', storedToken); 
+    
+                setSuccess('Login successful!');
+                setTimeout(() => {
                     router.push('/home'); 
+                }, 1000); 
             } else {
                 const errorData = await response.json();
                 setError(errorData.message || 'Login failed. Please try again.');
-                console.error('Error:', errorData);
             }
         } catch (err) {
             setError('Login failed. Please try again.');
-            console.error('Fetch error:', err);
         } finally {
             setLoading(false);
         }

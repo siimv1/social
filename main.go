@@ -1,41 +1,54 @@
 package main
 
 import (
-    "log"
-    "net/http"
-    "social-network/backend/pkg/auth"
-    "social-network/backend/pkg/api"  // Import your post handlers here
-    "social-network/backend/pkg/db"
-    "github.com/gorilla/handlers"
+	"log"
+	"net/http"
+	"social-network/backend/pkg/auth"
+	"social-network/backend/pkg/db"
+	"social-network/backend/pkg/followers"
+	"social-network/backend/pkg/notifications" // Teavituste pakett
+	"social-network/backend/pkg/posts"
+
+	"github.com/gorilla/handlers"
 )
 
 func main() {
-    // Connect to the SQLite database
-    err := db.ConnectSQLite("database.db")
-    if err != nil {
-        log.Fatalf("Could not connect to the database: %v", err)
-    }
-    defer db.CloseSQLite()
-    db.Migrate("backend/pkg/db/migrations")
+	// Andmebaasi ühendamine ja migratsioonide käivitamine
+	err := db.ConnectSQLite("database.db")
+	if err != nil {
+		log.Fatalf("Andmebaasiga ühendamine ebaõnnestus: %v", err)
+	}
+	defer db.CloseSQLite()
+	db.Migrate("backend/pkg/db/migrations")
 
-    // Set up your routes for auth
-    http.HandleFunc("/register", auth.RegisterHandler)
-    http.HandleFunc("/login", auth.LoginHandler)
+	// Route'ide seadistamine
+	http.HandleFunc("/register", auth.RegisterHandler)
+	http.HandleFunc("/login", auth.LoginHandler)
+	http.HandleFunc("/profile", auth.ProfileHandler)
+	http.HandleFunc("/followers", followers.FollowHandler)
+	http.HandleFunc("/followers/unfollow", followers.UnfollowHandler)
+	http.HandleFunc("/following", followers.GetFollowingHandler)
+	http.HandleFunc("/user", auth.UsersHandler)
+	http.HandleFunc("/posts", posts.CreatePost)
+	http.HandleFunc("/api/posts", posts.GetPosts)
+	http.HandleFunc("/posts/comments", posts.CreateComment)
 
-    // Set up routes for posts
-    http.HandleFunc("/api/posts", api.CreatePost) // POST to create a post
-    http.HandleFunc("/api/posts", api.GetPosts)   // GET to fetch all posts
+	// Teavituste route'id
+	http.HandleFunc("/notifications/unread", notifications.HandleGetUnreadNotifications) // Kasutaja lugemata teavitused
+	http.HandleFunc("/notifications/read/", notifications.HandleMarkNotificationAsRead)  // Märgi teavitus loetuks
 
-    // Create a CORS handler
-    corsHandler := handlers.CORS(
-        handlers.AllowedOrigins([]string{"*"}),                             // Allow all origins
-        handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),        // Allow specified methods
-        handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}), // Allow specified headers
-    )
-	
-    // Start the server with CORS enabled
-    log.Println("Server started at :8080")
-    if err := http.ListenAndServe("0.0.0.0:8080", corsHandler(http.DefaultServeMux)); err != nil {
-        log.Fatalf("Could not start the server: %v", err)
-    }
+	log.Println("Route'id seadistatud edukalt.")
+
+	// CORS haldur
+	corsHandler := handlers.CORS(
+		handlers.AllowedOrigins([]string{"*"}),                                           // Lubatud kõik päritolud
+		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),                      // Lubatud meetodid
+		handlers.AllowedHeaders([]string{"Content-Type", "Authorization", "User-Email"}), // Lubatud päised
+	)
+
+	// Serveri käivitamine
+	log.Println("Server käivitati aadressil :8080")
+	if err := http.ListenAndServe("0.0.0.0:8080", corsHandler(http.DefaultServeMux)); err != nil {
+		log.Fatalf("Serveri käivitamine ebaõnnestus: %v", err)
+	}
 }

@@ -7,7 +7,6 @@ toolchain go1.22.7
 require (
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/gorilla/handlers v1.5.2
-	github.com/gorilla/mux v1.7.4
 	github.com/mattn/go-sqlite3 v1.14.23
 	golang.org/x/crypto v0.27.0
 )

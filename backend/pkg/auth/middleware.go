@@ -9,7 +9,6 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		cookie, err := r.Cookie("session_token")
 		if err != nil {
 			if err == http.ErrNoCookie {
-				// No session cookie found, user is not authenticated
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
@@ -22,7 +21,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		// User is authenticated, continue with the request
+		// Set the user's email in the request header
 		r.Header.Set("User-Email", email)
 		next(w, r)
 	}

@@ -24,13 +24,14 @@ const Register = () => {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-        firstName: '',
-        lastName: '',
-        dateOfBirth: '',
+        first_name: '',
+        last_name: '',  
+        date_of_birth: '', 
         avatar: '',
         nickname: '',
-        aboutMe: ''
+        about_me: ''
     });
+
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
@@ -73,14 +74,14 @@ const Register = () => {
             {success && <p className="success">{success}</p>}
             {error && <p className="error">{error}</p>}
             <form className="registrationForm" onSubmit={handleSubmit}>
-                <input type="text" name="firstName" placeholder="First Name" onChange={handleChange} required />
-                <input type="text" name="lastName" placeholder="Last Name" onChange={handleChange} required />
+                <input type="text" name="first_name" placeholder="First Name" onChange={handleChange} required />
+                <input type="text" name="last_name" placeholder="Last Name" onChange={handleChange} required />
                 <input type="email" name="email" placeholder="Email" onChange={handleChange} required />
                 <input type="password" name="password" placeholder="Password" onChange={handleChange} required />
-                <input type="date" name="dateOfBirth" onChange={handleChange} required />
+                <input type="date" name="date_of_birth" onChange={handleChange} required />
                 <input type="text" name="avatar" placeholder="Avatar URL (Optional)" onChange={handleChange} />
                 <input type="text" name="nickname" placeholder="Nickname (Optional)" onChange={handleChange} />
-                <textarea name="aboutMe" placeholder="About Me (Optional)" onChange={handleChange}></textarea>
+                <textarea name="about_me" placeholder="About Me (Optional)" onChange={handleChange}></textarea>
                 <button type="submit" disabled={loading}>{loading ? 'Registering...' : 'Register'}</button>
                 <button type="button" onClick={handleBack} style={{ marginTop: '10px' }}>Back</button>
             </form>

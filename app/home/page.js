@@ -1,53 +1,133 @@
-"use client";
+"use client"; // "use client" peab olema faili alguses
+
 import Link from 'next/link';
 import Image from 'next/image';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiRequest } from '../apiclient'; // Hoidke ainult üks imporditud apiRequest
 import './home.css';
+import CreatePost from '../posts/CreatePost';
+import PostList from '../posts/PostList';
 
-const Home = () => {
-    const router = useRouter();
-    const [content, setContent] = useState('');  // To store the post content
-    const [posts, setPosts] = useState([         // Initially, placeholder posts
-        { id: 1, name: 'John Doe', content: 'This is a sample post in your timeline. Like, comment, or share!' },
-        { id: 2, name: 'Jane Smith', content: 'Another sample post with a similar style to Facebook\'s feed.' },
-    ]);
 
-    const handleLogout = async () => {
-        router.push('/login'); 
+const HomePage = () => {
+    const [newPost, setNewPost] = useState(null);
+  
+    const handlePostCreated = (post) => {
+      setNewPost(post); 
     };
+}  
 
-    const handlePost = async () => {
-        if (!content.trim()) {
-            alert('Post content cannot be empty!');
-            return;
-        }
+const FollowButton = ({ followedID, isFollowing, onFollowChange }) => {
+    const [followStatus, setFollowStatus] = useState(isFollowing ? 'following' : 'not-following');
 
+    const handleFollow = async () => {
         try {
-            // Send the POST request to the backend to create a post
-            const response = await fetch('http://localhost:8080/backend/pkg/api/posts', {  // Update with your API URL
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content }),
-            });
-
-            if (response.ok) {
-                const newPost = await response.json();
-                // Add the new post to the top of the timeline
-                setPosts([{ id: newPost.id, name: 'You', content: newPost.content }, ...posts]);
-                setContent('');  // Clear the textarea
-                alert('Post created successfully!');
+            const response = await apiRequest('/followers', 'POST', { followed_id: followedID });
+            if (response.status === 'accepted') {
+                setFollowStatus('following');
+                onFollowChange(followedID, true);
             } else {
-                console.error('Failed to create post', response.status);
-                alert('Failed to create post');
+                setFollowStatus('pending');
             }
         } catch (error) {
-            console.error('Error creating post:', error);
+            console.error('Failed to send follow request:', error);
+        }
+    };
+
+    const handleUnfollow = async () => {
+        try {
+            const response = await apiRequest('/followers/unfollow', 'POST', { followed_id: followedID });
+            setFollowStatus('not-following');
+            onFollowChange(followedID, false);
+        } catch (error) {
+            console.error('Failed to unfollow:', error);
         }
     };
 
     return (
+        <div>
+            {followStatus === 'following' ? (
+                <button className="unfollow-button" onClick={handleUnfollow}>Unfollow</button>
+            ) : followStatus === 'pending' ? (
+                <button className="pending-button" disabled>Pending Request</button>
+            ) : (
+                <button className="follow-button" onClick={handleFollow}>Follow</button>
+            )}
+        </div>
+    );
+};
+
+const Home = () => {
+    const [newPost, setNewPost] = useState(null);
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const router = useRouter();
+    const [posts, setPosts] = useState([]);
+
+    useEffect(() => {
+        const fetchPosts = async () => {
+            try {
+                const response = await apiRequest('/posts', 'GET'); // Adjust the endpoint as per your backend
+                const data = await response.json();
+                setPosts(data.posts);
+            } catch (error) {
+                console.error('Error fetching posts:', error);
+            }
+        };
+        fetchPosts();
+    }, []);
+    const handleLogout = async () => {
+        router.push('/login'); 
+    };
+
+    const handlePostCreated = (post) => {
+        setNewPost(post);
+    };
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const response = await apiRequest("/user", "GET");
+                const data = await response; 
+                
+                // Kontrolli, kas data.users on olemas ja mitte tühi
+                if (data && data.users) {
+                    const usersWithDefaults = data.users.map(user => ({
+                        ...user,
+                        isFollowing: user.isFollowing ?? false, // Lisame vaikimisi väärtuse
+                        isOnline: user.isOnline ?? false // Lisame vaikimisi väärtuse
+                    }));
+                    setUsers(usersWithDefaults);
+                } else {
+                    console.log("Kasutajaid ei leitud");
+                }
+    
+                setLoading(false);
+            } catch (error) {
+                console.error("Kasutajate toomine ebaõnnestus:", error);
+                setLoading(false);
+            }
+        };
+    
+        fetchUsers();
+    }, []);    
+
+    // Logi kasutajate info väljaspool JSX-i
+    useEffect(() => {
+        console.log(users.map(user => ({ id: user.id, isOnline: user.isOnline })));
+    }, [users]);
+
+    const handleFollowChange = (userId, isFollowing) => {
+        setUsers(prevUsers => 
+            prevUsers.map(user => 
+                user.id === userId ? { ...user, isFollowing: isFollowing ?? false, isOnline: user.isOnline ?? false } : user
+            )
+        );
+    };    
+
+    return (
         <div className="home-container">
+            {/* Header */}
             <div className="home-header">
                 <Link href="/profile">
                     <Image src="/profile.png" alt="profile" width={100} height={100} className="profile-pic" />
@@ -65,46 +145,62 @@ const Home = () => {
                 </div>
                 <button className="logout-button" onClick={handleLogout}>Log Out</button>
             </div>
-
+    
+            {/* Left Sidebar */}
             <div className="home-sidebar-left">
                 <ul>
                     <li><Link href="/profile" style={{ textDecoration: 'none', color: 'inherit' }}>My profile</Link></li>
-                    <li>I'm following</li>
-                    <li>My followers</li>
+                    <li><Link href="/followers" style={{ textDecoration: 'none', color: 'inherit' }}>My followers</Link></li> 
+                    <li><Link href="/following" style={{ textDecoration: 'none', color: 'inherit' }}>I'm following</Link></li> 
                 </ul>
             </div>
-
+    
+            {/* Right Sidebar */}
             <div className="home-sidebar-right">
                 <ul>
                     <li>Groups</li>
                     <li>Chats</li>
                 </ul>
-            </div>
-
-            <div className="home-content">
-                <div className="post-section">
-                    <h2>Create a Post</h2>
-                    <textarea
-                        placeholder="What's on your mind?"
-                        rows="3"
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}  // Update post content on input change
-                    ></textarea>
-                    <button className="post-button" onClick={handlePost}>Post</button> {/* This is the Post button */}
+                <div>
+                    <h2>Users</h2>
+                    {loading ? (
+                        <p>Loading users...</p>
+                    ) : users.length === 0 ? (
+                        <p>There are currently no registered users.</p>
+                    ) : (
+                        users.map(user => (
+                            <div key={user.id} className={`user-item ${user.isOnline ? 'online' : 'offline'}`}>
+                                <p>{user.first_name} {user.last_name}</p>
+                                <FollowButton followedID={user.id} isFollowing={user.isFollowing} onFollowChange={handleFollowChange} />
+                            </div>
+                        ))                                             
+                    )}
                 </div>
-
+            </div>
+    
+            {/* Main Content */}
+    <div className="home-content">
+      <div className="post-section">
+        <h2>Create a Post</h2>
+        <CreatePost onPostCreated={handlePostCreated} />
+      </div>
+    
                 <div className="timeline-section">
                     <h2>Your Timeline</h2>
-                    {posts.map((post) => (
-                        <div className="post" key={post.id}>
-                            <h3>{post.name}</h3>
-                            <p>{post.content}</p>
-                        </div>
-                    ))}
+                    <PostList posts={posts} newPost={newPost} />
+
+                    <div className="post">
+                        <h3>John Doe</h3>
+                        <p>This is a sample post in your timeline. Like, comment, or share!</p>
+                    </div>
+                    <div className="post">
+                        <h3>Jane Smith</h3>
+                        <p>Another sample post.</p>
+                    </div>
                 </div>
             </div>
         </div>
     );
-};
+}
 
 export default Home;

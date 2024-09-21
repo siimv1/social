@@ -1,0 +1,273 @@
+.home-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #4267B2; 
+    overflow: hidden; 
+    position: fixed; 
+    top: 0;
+    left: 0;
+    right: 0; 
+}
+
+.home-header, .followers-header {
+    background-color: #4267B2; 
+    color: white;
+    padding: 15px 30px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    position: fixed; 
+    top: 0;
+    left: 0;
+    right: 0; 
+    z-index: 10; 
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-buttons {
+    display: flex;
+    align-items: center;
+}
+
+.header-buttons button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.messenger-button, .notification-button {
+    border-radius: 50%;
+    position: absolute; 
+}
+
+.messenger-button {
+    margin-right: 115px;
+    right: 40px;
+}
+
+.notification-button {
+    width: 50px;
+    height: 50px;
+    margin-right: 115px;
+    right: 100px;
+}
+
+.profile-pic {
+    border-radius: 50%;
+    margin-right: 15px;
+    position: absolute;
+    top: 15px;
+    left: 50px;
+}
+
+.followers-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #4267B2;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+.followers-sidebar-left,
+.followers-sidebar-right {
+    width: 250px;
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    margin-top: 130px;
+    position: fixed;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+}
+
+.followers-sidebar-left {
+    left: 0;
+}
+
+.followers-sidebar-right {
+    right: 0;
+}
+
+.followers-sidebar-left ul,
+.followers-sidebar-right ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.followers-sidebar-left li,
+.followers-sidebar-right li {
+    font-size: 18px;
+    padding: 10px;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.followers-sidebar-left li:hover,
+.followers-sidebar-right li:hover {
+    background-color: #e9ecef;
+    border-radius: 4px;
+}
+
+.followers-content {
+    flex-grow: 1;
+    margin-left: 280px;
+    margin-right: 280px;
+    padding: 20px; /* Muuda padding'i */
+    margin-top: 130px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center; /* Keskenda sisu */
+}
+
+.followers-header {
+    font-size: 24px; /* Suurenda font-size'i */
+    margin-bottom: 20px; /* Lisa allserva marginaal */
+}
+
+.follower-item {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.follower-item h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.follower-item p {
+    font-size: 16px;
+    color: #666;
+}
+
+.follower-item button {
+    background-color: #4267b2;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.follower-item button:hover {
+    background-color: #365899;
+}
+
+.user-item {
+    background-color: #f8f9fa;
+    padding: 15px; 
+    border-radius: 8px; 
+    margin-bottom: 10px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    transition: background-color 0.3s ease; 
+}
+
+.user-item:hover {
+    background-color: #e2e6ea; 
+}
+
+.user-item p {
+    margin: 0; 
+    font-size: 16px; 
+}
+
+.user-item.online {
+    color: green; 
+}
+
+.user-item.offline {
+    color: red; 
+}
+
+.logout-button {
+    position: absolute;
+    top: 45px;
+    right: 30px;
+    background-color: #004080;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.logout-button:hover {
+    background-color: #242eb6;
+}
+
+.back-button {
+    background-color: #4267b2;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+    background-color: #365899;
+}
+
+@media (max-width: 768px) {
+    .followers-container {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .followers-sidebar-left,
+    .followers-sidebar-right {
+        width: 100%;
+        margin-top: 0;
+        position: relative;
+        height: auto;
+    }
+
+    .followers-header {
+        width: 100%;
+    }
+
+    .followers-content {
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+
+.back-button{
+    background-color: #4267b2;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;;
+    
+    }
+    
+   .back-button:hover{
+    background-color: #365899;
+    }

@@ -222,3 +222,69 @@
 .logout-button:hover {
     background-color: #242eb6;
 }
+
+.user-item {
+    background-color: #f8f9fa;
+    padding: 15px; 
+    border-radius: 8px; 
+    margin-bottom: 10px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    transition: background-color 0.3s ease; 
+}
+
+.user-item:hover {
+    background-color: #e2e6ea; 
+}
+
+.user-item p {
+    margin: 0; 
+    font-size: 16px; 
+}
+
+.user-item.online {
+    color: green; 
+}
+
+.user-item.offline {
+    color: red; 
+}
+
+/* Nupu stiilid */
+.follow-button, .unfollow-button, .pending-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 5px;
+}
+
+/* "Follow" nupp */
+.follow-button {
+    background-color: #007bff; 
+    color: white; 
+    transition: background-color 0.3s;
+}
+
+.follow-button:hover {
+    background-color: #0056b3; 
+}
+
+/* "Unfollow" nupp */
+.unfollow-button {
+    background-color: #dc3545; 
+    color: white; 
+    transition: background-color 0.3s;
+}
+
+.unfollow-button:hover {
+    background-color: #c82333; 
+}
+
+/* "Pending" nupp */
+.pending-button {
+    background-color: #ffc107; 
+    color: white; 
+}

@@ -1,0 +1,166 @@
+/* followers.css */
+
+.followers-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #4267B2;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+.followers-header {
+    background-color: #4267B2; 
+    color: white;
+    padding: 15px 30px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    position: fixed; 
+    top: 0;
+    left: 0;
+    right: 0; 
+    z-index: 10; 
+}
+
+.header-buttons {
+    display: flex;
+    align-items: center;
+}
+
+.header-buttons button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.profile-pic {
+    border-radius: 50%;
+    margin-right: 15px;
+    position: absolute;
+    top: 15px;
+    left: 50px;
+}
+
+.logout-button {
+    position: absolute;
+    top: 45px;
+    right: 30px;
+    background-color: #004080;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.logout-button:hover {
+    background-color: #242eb6;
+}
+
+.back-button {
+    background-color: #4267b2;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin: 10px 0; /* Lisa veidi ruumi tagasi nupule */
+}
+
+.back-button:hover {
+    background-color: #365899;
+}
+
+.followers-content {
+    flex-grow: 1;
+    margin: 60px 280px 0; /* Jäta ruumi päisele */
+    padding: 50px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow-y: auto; /* Lisage kerimisvõime, kui sisu ületab kõrguse */
+}
+
+.follower-item {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.follower-item h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.follower-item button {
+    background-color: #4267b2;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.follower-item button:hover {
+    background-color: #365899;
+}
+
+.user-item {
+    background-color: #f8f9fa;
+    padding: 15px; 
+    border-radius: 8px; 
+    margin-bottom: 10px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    transition: background-color 0.3s ease; 
+}
+
+.user-item:hover {
+    background-color: #e2e6ea; 
+}
+
+.user-item p {
+    margin: 0; 
+    font-size: 16px; 
+}
+
+.user-item.online {
+    color: green; 
+}
+
+.user-item.offline {
+    color: red; 
+}
+
+@media (max-width: 768px) {
+    .followers-content {
+        margin: 60px 20px 0; /* Mobiiliversioonis kitsenda marginaali */
+        padding: 20px; /* Vähenda täitmise suurust mobiiliversioonis */
+    }
+
+    .logout-button {
+        position: static; /* Muuda staatiliseks, et see sobituks paremini mobiilivaatamisel */
+        margin: 10px 0; /* Lisa ruumi */
+    }
+
+    .back-button {
+        width: 100%; /* Täida mobiilis tagasi nupu laius */
+        margin-top: 10px; /* Lisa ruumi nupu ülemise osa jaoks */
+    }
+}
