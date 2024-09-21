@@ -16,12 +16,25 @@ const CreatePost = ({ onPostCreated }) => {
     if (gif) formData.append('gif', gif);
 
     try {
+      // Sending POST request to the backend
       const response = await axios.post('http://localhost:8080/posts', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      onPostCreated(response.data);
+
+      // Call the onPostCreated function to update the post list
+      if (onPostCreated) {
+        onPostCreated(response.data);
+      }
+
+      // Clear the form
+      setContent('');
+      setPrivacy('public');
+      setImage(null);
+      setGif(null);
+
     } catch (error) {
       console.error('Error creating post:', error);
+      alert('There was an error while posting. Please check the console.');
     }
   };
 

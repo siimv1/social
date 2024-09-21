@@ -9,12 +9,12 @@ import './home.css';
 import CreatePost from '../posts/CreatePost';
 import PostList from '../posts/PostList';
 
-
 const HomePage = () => {
     const [newPost, setNewPost] = useState(null);
   
+    // Define handlePostCreated function to update the state when a new post is created
     const handlePostCreated = (post) => {
-      setNewPost(post); 
+      setNewPost(post); // Update the state with the newly created post
     };
 }  
 
@@ -63,26 +63,13 @@ const Home = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
-    const [posts, setPosts] = useState([]);
 
-    useEffect(() => {
-        const fetchPosts = async () => {
-            try {
-                const response = await apiRequest('/posts', 'GET'); // Adjust the endpoint as per your backend
-                const data = await response.json();
-                setPosts(data.posts);
-            } catch (error) {
-                console.error('Error fetching posts:', error);
-            }
-        };
-        fetchPosts();
-    }, []);
     const handleLogout = async () => {
         router.push('/login'); 
     };
 
     const handlePostCreated = (post) => {
-        setNewPost(post);
+        setNewPost(post); // Update the state with the newly created post
     };
     useEffect(() => {
         const fetchUsers = async () => {
@@ -187,7 +174,7 @@ const Home = () => {
     
                 <div className="timeline-section">
                     <h2>Your Timeline</h2>
-                    <PostList posts={posts} newPost={newPost} />
+                    <PostList newPost={newPost} />
 
                     <div className="post">
                         <h3>John Doe</h3>
