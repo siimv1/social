@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const CreatePost = ({ onPostCreated }) => {
@@ -6,6 +6,21 @@ const CreatePost = ({ onPostCreated }) => {
   const [privacy, setPrivacy] = useState('public');
   const [image, setImage] = useState(null);
   const [gif, setGif] = useState(null);
+  const [user, setUser] = useState({ first_name: '', last_name: '' });
+
+  // Fetch user profile information (e.g., first_name and last_name)
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/user/profile'); // Adjust the endpoint to fetch the logged-in user info
+        setUser(response.data);
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,22 +54,26 @@ const CreatePost = ({ onPostCreated }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <textarea
-        placeholder="What's on your mind?"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        required
-      />
-      <input type="file" onChange={(e) => setImage(e.target.files[0])} />
-      <input type="file" onChange={(e) => setGif(e.target.files[0])} accept="image/gif" />
-      <select value={privacy} onChange={(e) => setPrivacy(e.target.value)}>
-        <option value="public">Public</option>
-        <option value="private">Private</option>
-        <option value="almost-private">Almost Private</option>
-      </select>
-      <button type="submit">Post</button>
-    </form>
+    <div>
+      {/* Display the user's name while posting */}
+      <h3>{user.first_name} {user.last_name}</h3>
+      <form onSubmit={handleSubmit}>
+        <textarea
+          placeholder="What's on your mind?"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          required
+        />
+        <input type="file" onChange={(e) => setImage(e.target.files[0])} />
+        <input type="file" onChange={(e) => setGif(e.target.files[0])} accept="image/gif" />
+        <select value={privacy} onChange={(e) => setPrivacy(e.target.value)}>
+          <option value="public">Public</option>
+          <option value="private">Private</option>
+          <option value="almost-private">Almost Private</option>
+        </select>
+        <button type="submit">Post</button>
+      </form>
+    </div>
   );
 };
 

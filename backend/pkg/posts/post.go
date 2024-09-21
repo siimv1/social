@@ -2,10 +2,10 @@ package posts
 
 import (
     "log"
-    "time"
     "encoding/json"
     "net/http"
     "social-network/backend/pkg/db"
+    "time"
 )
 
 type Post struct {
@@ -16,6 +16,8 @@ type Post struct {
     GIF       string    `json:"gif"`
     Privacy   string    `json:"privacy"`
     CreatedAt time.Time `json:"created_at"`
+    FirstName string    `json:"first_name"` 
+    LastName  string    `json:"last_name"`  
 }
 
 // Comment represents a comment on a post
@@ -49,8 +51,8 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
     post.GIF = handleGIFUpload(r)
 
     // Save post to the database
-    _, err = db.DB.Exec("INSERT INTO posts (user_id, content, image, gif, privacy) VALUES (?, ?, ?, ?, ?)",
-        post.UserID, post.Content, post.Image, post.GIF, post.Privacy)
+    _, err = db.DB.Exec("INSERT INTO posts (user_id, content, image, gif, privacy, first_name, last_name) VALUES (?, ?, ?, ?, ?)",
+        post.UserID, post.Content, post.FirstName, post.LastName, post.Image, post.GIF, post.Privacy)
     if err != nil {
         log.Printf("Error saving post: %v", err)
         http.Error(w, "Error saving post", http.StatusInternalServerError)
@@ -83,18 +85,16 @@ func CreateComment(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(comment)
 }
 func GetPosts(w http.ResponseWriter, r *http.Request) {
-    userID := r.URL.Query().Get("user_id")
-    if userID == "" {
-        http.Error(w, "user_id is required", http.StatusBadRequest)
-        return
-    }
+    // Updated query to join posts with users
+    query := `
+        SELECT p.id, p.user_id, p.content, p.image, p.gif, p.privacy, p.created_at, u.first_name, u.last_name
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        ORDER BY p.created_at DESC
+    `
 
-    rows, err := db.DB.Query(`
-    SELECT p.id, p.content, p.image, p.gif, p.privacy, u.username
-    FROM posts p
-    JOIN users u ON p.user_id = u.id
-    WHERE u.id = ?`, userID)
-      if err != nil {
+    rows, err := db.DB.Query(query)
+    if err != nil {
         log.Printf("Error fetching posts: %v", err)
         http.Error(w, "Error fetching posts", http.StatusInternalServerError)
         return
@@ -104,7 +104,8 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
     var posts []Post
     for rows.Next() {
         var post Post
-        err := rows.Scan(&post.ID, &post.UserID, &post.Content, &post.Image, &post.GIF, &post.Privacy, &post.CreatedAt)
+        // Scan user details along with post details
+        err := rows.Scan(&post.ID, &post.UserID, &post.Content, &post.Image, &post.GIF, &post.Privacy, &post.CreatedAt, &post.FirstName, &post.LastName)
         if err != nil {
             log.Printf("Error scanning post: %v", err)
             continue
@@ -112,5 +113,6 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
         posts = append(posts, post)
     }
 
+    // Return posts along with user info (first name and last name)
     json.NewEncoder(w).Encode(posts)
 }
