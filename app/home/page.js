@@ -174,12 +174,10 @@ const Home = () => {
     
                 <div className="timeline-section">
                     <h2>Your Timeline</h2>
-                    <PostList newPost={newPost} />
 
                     <div className="post">
-                        <h3>John Doe</h3>
-                        <p>This is a sample post in your timeline. Like, comment, or share!</p>
-                    </div>
+                        <PostList newPost={newPost} />
+                        </div>
                     <div className="post">
                         <h3>Jane Smith</h3>
                         <p>Another sample post.</p>

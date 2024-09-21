@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const PostList = () => {
+const PostList = ({ newPost }) => {
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
@@ -16,9 +16,12 @@ const PostList = () => {
     fetchPosts();
   }, []);
 
+  // Prepend new post to the posts list if a new post exists
+  const allPosts = newPost ? [newPost, ...posts] : posts;
+
   return (
     <div>
-      {posts.map((post) => (
+      {allPosts.map((post) => (
         <div key={post.id}>
           <h3>{post.content}</h3>
           {post.image && <img src={`http://localhost:8080/${post.image}`} alt="Post Image" />}

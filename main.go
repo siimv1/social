@@ -47,8 +47,8 @@ func main() {
 	)
 
 	// Serveri käivitamine
-	log.Println("Server käivitati aadressil :8080")
-	if err := http.ListenAndServe("0.0.0.0:8080", corsHandler(http.DefaultServeMux)); err != nil {
+	log.Println("Server käivitati aadressil :8081")
+	if err := http.ListenAndServe("0.0.0.0:8081", corsHandler(http.DefaultServeMux)); err != nil {
 		log.Fatalf("Serveri käivitamine ebaõnnestus: %v", err)
 	}
 }

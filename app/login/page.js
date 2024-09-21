@@ -10,6 +10,8 @@ const Login = () => {
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const [profileData, setProfileData] = useState(null);
+
 
     const handleLogin = async (e) => {
         e.preventDefault();
