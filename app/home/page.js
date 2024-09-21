@@ -174,7 +174,6 @@ const Home = () => {
 
                 <div className="timeline-section">
                     <h2>Your Timeline</h2>
-                    {/* Removed the hardcoded "John Doe" */}
                     <PostList newPost={newPost} />  {/* Dynamic post list */}
                 </div>
             </div>
