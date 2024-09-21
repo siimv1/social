@@ -71,6 +71,7 @@ const Home = () => {
     const handlePostCreated = (post) => {
         setNewPost(post); // Update the state with the newly created post
     };
+
     useEffect(() => {
         const fetchUsers = async () => {
             try {
@@ -81,25 +82,24 @@ const Home = () => {
                 if (data && data.users) {
                     const usersWithDefaults = data.users.map(user => ({
                         ...user,
-                        isFollowing: user.isFollowing ?? false, // Lisame vaikimisi väärtuse
-                        isOnline: user.isOnline ?? false // Lisame vaikimisi väärtuse
+                        isFollowing: user.isFollowing ?? false,
+                        isOnline: user.isOnline ?? false,
                     }));
                     setUsers(usersWithDefaults);
                 } else {
-                    console.log("Kasutajaid ei leitud");
+                    console.log("No users found");
                 }
-    
+
                 setLoading(false);
             } catch (error) {
-                console.error("Kasutajate toomine ebaõnnestus:", error);
+                console.error("Error fetching users:", error);
                 setLoading(false);
             }
         };
-    
+
         fetchUsers();
     }, []);    
 
-    // Logi kasutajate info väljaspool JSX-i
     useEffect(() => {
         console.log(users.map(user => ({ id: user.id, isOnline: user.isOnline })));
     }, [users]);
@@ -107,10 +107,10 @@ const Home = () => {
     const handleFollowChange = (userId, isFollowing) => {
         setUsers(prevUsers => 
             prevUsers.map(user => 
-                user.id === userId ? { ...user, isFollowing: isFollowing ?? false, isOnline: user.isOnline ?? false } : user
+                user.id === userId ? { ...user, isFollowing, isOnline: user.isOnline ?? false } : user
             )
         );
-    };    
+    };
 
     return (
         <div className="home-container">
@@ -132,7 +132,7 @@ const Home = () => {
                 </div>
                 <button className="logout-button" onClick={handleLogout}>Log Out</button>
             </div>
-    
+
             {/* Left Sidebar */}
             <div className="home-sidebar-left">
                 <ul>
@@ -141,7 +141,7 @@ const Home = () => {
                     <li><Link href="/following" style={{ textDecoration: 'none', color: 'inherit' }}>I'm following</Link></li> 
                 </ul>
             </div>
-    
+
             {/* Right Sidebar */}
             <div className="home-sidebar-right">
                 <ul>
@@ -164,24 +164,18 @@ const Home = () => {
                     )}
                 </div>
             </div>
-    
+
             {/* Main Content */}
-    <div className="home-content">
-      <div className="post-section">
-        <h2>Create a Post</h2>
-        <CreatePost onPostCreated={handlePostCreated} />
-      </div>
-    
+            <div className="home-content">
+                <div className="post-section">
+                    <h2>Create a Post</h2>
+                    <CreatePost onPostCreated={handlePostCreated} />
+                </div>
+
                 <div className="timeline-section">
                     <h2>Your Timeline</h2>
-
-                    <div className="post">
-                        <PostList newPost={newPost} />
-                        </div>
-                    <div className="post">
-                        <h3>Jane Smith</h3>
-                        <p>Another sample post.</p>
-                    </div>
+                    {/* Removed the hardcoded "John Doe" */}
+                    <PostList newPost={newPost} />  {/* Dynamic post list */}
                 </div>
             </div>
         </div>

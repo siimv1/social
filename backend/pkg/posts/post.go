@@ -83,8 +83,18 @@ func CreateComment(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(comment)
 }
 func GetPosts(w http.ResponseWriter, r *http.Request) {
-    rows, err := db.DB.Query("SELECT id, user_id, content, image, gif, privacy, created_at FROM posts ORDER BY created_at DESC")
-    if err != nil {
+    userID := r.URL.Query().Get("user_id")
+    if userID == "" {
+        http.Error(w, "user_id is required", http.StatusBadRequest)
+        return
+    }
+
+    rows, err := db.DB.Query(`
+    SELECT p.id, p.content, p.image, p.gif, p.privacy, u.username
+    FROM posts p
+    JOIN users u ON p.user_id = u.id
+    WHERE u.id = ?`, userID)
+      if err != nil {
         log.Printf("Error fetching posts: %v", err)
         http.Error(w, "Error fetching posts", http.StatusInternalServerError)
         return
