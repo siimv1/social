@@ -30,7 +30,7 @@ func main() {
 	http.HandleFunc("/following", followers.GetFollowingHandler)
 	http.HandleFunc("/user", auth.UsersHandler)
 	http.HandleFunc("/posts", posts.CreatePost)
-	http.HandleFunc("/posts", posts.GetPosts)
+	http.HandleFunc("/posts/user", posts.GetPosts)
 	http.HandleFunc("/posts/comments", posts.CreateComment)
 	
 

@@ -12,15 +12,21 @@ const CreatePost = ({ onPostCreated }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/user/profile'); // Adjust the endpoint to fetch the logged-in user info
+        const token = localStorage.getItem('token'); // Make sure the token is stored in localStorage
+        const response = await axios.get('http://localhost:8080/profile', {
+          headers: {
+            Authorization: `Bearer ${token}`, // Add the token to the Authorization header
+          },
+        });
         setUser(response.data);
       } catch (error) {
         console.error('Error fetching user profile:', error);
       }
     };
-
+  
     fetchUser();
   }, []);
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();

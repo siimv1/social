@@ -7,6 +7,7 @@ const YourTimeline = () => {
     useEffect(() => {
         axios.get('/api/posts')
             .then(response => {
+                console.log(response.data);  // Add this line to log the API response
                 setPosts(response.data);
             })
             .catch(error => {
