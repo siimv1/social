@@ -7,7 +7,6 @@ import (
 	"social-network/backend/pkg/db"
 	"social-network/backend/pkg/followers"
 	"social-network/backend/pkg/notifications" // Teavituste pakett
-	"social-network/backend/pkg/posts"
 
 	"github.com/gorilla/handlers"
 )
@@ -29,9 +28,7 @@ func main() {
 	http.HandleFunc("/followers/unfollow", followers.UnfollowHandler)
 	http.HandleFunc("/following", followers.GetFollowingHandler)
 	http.HandleFunc("/user", auth.UsersHandler)
-	http.HandleFunc("/posts", posts.CreatePost)
-	http.HandleFunc("/posts/user", posts.GetPosts)
-	http.HandleFunc("/posts/comments", posts.CreateComment)
+
 	
 
 	// Teavituste route'id

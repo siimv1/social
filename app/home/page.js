@@ -6,8 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '../apiclient'; // Hoidke ainult üks imporditud apiRequest
 import './home.css';
-import CreatePost from '../posts/CreatePost';
-import PostList from '../posts/PostList';
+
 
 const HomePage = () => {
     const [newPost, setNewPost] = useState(null);
@@ -169,13 +168,11 @@ const Home = () => {
             <div className="home-content">
                 <div className="post-section">
                     <h2>Create a Post</h2>
-                    <CreatePost onPostCreated={handlePostCreated} />
                 </div>
 
                 <div className="timeline-section">
                     <h2>Your Timeline</h2>
                     {/* Removed the hardcoded "John Doe" */}
-                    <PostList newPost={newPost} />  {/* Dynamic post list */}
                 </div>
             </div>
         </div>
