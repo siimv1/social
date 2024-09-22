@@ -8,12 +8,11 @@ const CreatePost = ({ onPostCreated }) => {
   const [gif, setGif] = useState(null);
   const [user, setUser] = useState({ first_name: '', last_name: '' });
 
-  // Fetch user profile information (e.g., first_name and last_name)
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem('token'); // Make sure the token is stored in localStorage
-        const response = await axios.get('http://localhost:8080/profile', {
+        const response = await axios.get('http://localhost:8080/auth', {
           headers: {
             Authorization: `Bearer ${token}`, // Add the token to the Authorization header
           },

@@ -70,19 +70,24 @@ func CreateComment(w http.ResponseWriter, r *http.Request) {
 }
 func GetPosts(w http.ResponseWriter, r *http.Request) {
     userID := r.URL.Query().Get("user_id")
-    
-    rows, err := db.DB.Query(`
-        SELECT p.* FROM posts p
-        LEFT JOIN followers f ON p.user_id = f.following_id
-        WHERE (p.privacy = 'public') OR
-              (p.privacy = 'private' AND f.follower_id = ?) OR
-              (p.privacy = 'almost-private' AND EXISTS (
-                  SELECT 1 FROM selected_followers sf WHERE sf.post_id = p.id AND sf.follower_id = ?
-              ))`, userID, userID)
+    log.Printf("Fetching posts for user ID: %s", userID)
+
+    query := `
+    SELECT p.* FROM posts p
+    LEFT JOIN followers f ON p.user_id = f.followed_id
+    WHERE (p.privacy = 'public') OR
+          (p.privacy = 'private' AND f.follower_id = ?)`
+
+    log.Printf("SQL Query: %s", query)
+
+    rows, err := db.DB.Query(query, userID, userID)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        log.Printf("Error executing query: %v", err)  // Log the error in detail
+        http.Error(w, "Internal Server Error - Database Query Failed", http.StatusInternalServerError)
         return
     }
+    
+
     var posts []Post
     for rows.Next() {
         var post Post

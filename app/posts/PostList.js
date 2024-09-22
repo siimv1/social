@@ -8,16 +8,15 @@ const PostList = ({ newPost }) => {
   // Fetch posts from the backend
   useEffect(() => {
     const fetchPosts = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/posts/user', {
-          params: { user_id: 1 }  // Ensure user_id is passed correctly
-        });
-        setPosts(response.data);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-      }
-    };
-
+      axios.get(`http://localhost:8080/posts/user?user_id=1`)
+      .then(response => {
+          console.log(response.data);  // Make sure the data is received
+          // Handle the posts in your frontend logic
+      })
+      .catch(error => {
+          console.error("Error fetching posts:", error);
+      });
+    }  
     fetchPosts();
   }, []);
 
