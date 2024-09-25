@@ -5,18 +5,32 @@ import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '../apiclient'; // Hoidke ainult üks imporditud apiRequest
+import CreatePost from '../app/posts'; // Assuming you have the form in app/posts/page.js
+
 import './home.css';
 
 
 const HomePage = () => {
-    const [newPost, setNewPost] = useState(null);
-  
-    // Define handlePostCreated function to update the state when a new post is created
-    const handlePostCreated = (post) => {
-      setNewPost(post); // Update the state with the newly created post
-    };
-}  
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
+    useEffect(() => {
+        // Fetch posts from the backend
+        const fetchPosts = async () => {
+            try {
+                const response = await axios.get('/api/posts'); // Adjust endpoint as needed
+                setPosts(response.data);
+            } catch (error) {
+                console.error('Error fetching posts:', error);
+                setError('Failed to load posts. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPosts();
+    }, []);
+}
 const FollowButton = ({ followedID, isFollowing, onFollowChange }) => {
     const [followStatus, setFollowStatus] = useState(isFollowing ? 'following' : 'not-following');
 
@@ -57,47 +71,7 @@ const FollowButton = ({ followedID, isFollowing, onFollowChange }) => {
     );
 };
 
-const Home = () => {
-    const [newPost, setNewPost] = useState(null);
-    const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const router = useRouter();
 
-    const handleLogout = async () => {
-        router.push('/login'); 
-    };
-
-    const handlePostCreated = (post) => {
-        setNewPost(post); // Update the state with the newly created post
-    };
-
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await apiRequest("/user", "GET");
-                const data = await response; 
-                
-                // Kontrolli, kas data.users on olemas ja mitte tühi
-                if (data && data.users) {
-                    const usersWithDefaults = data.users.map(user => ({
-                        ...user,
-                        isFollowing: user.isFollowing ?? false,
-                        isOnline: user.isOnline ?? false,
-                    }));
-                    setUsers(usersWithDefaults);
-                } else {
-                    console.log("No users found");
-                }
-
-                setLoading(false);
-            } catch (error) {
-                console.error("Error fetching users:", error);
-                setLoading(false);
-            }
-        };
-
-        fetchUsers();
-    }, []);    
 
     useEffect(() => {
         console.log(users.map(user => ({ id: user.id, isOnline: user.isOnline })));
@@ -168,6 +142,7 @@ const Home = () => {
             <div className="home-content">
                 <div className="post-section">
                     <h2>Create a Post</h2>
+                    
                 </div>
 
                 <div className="timeline-section">
@@ -177,6 +152,6 @@ const Home = () => {
             </div>
         </div>
     );
-}
+
 
 export default Home;
