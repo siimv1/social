@@ -7,8 +7,6 @@ import (
 	"social-network/backend/pkg/db"
 	"social-network/backend/pkg/followers"
 	"social-network/backend/pkg/notifications" // Teavituste pakett
-	"social-network/backend/pkg/posts"         
-"io"
 	"github.com/gorilla/handlers"
 )
 
@@ -53,28 +51,3 @@ func main() {
 	}
 }
 
-func EchoHandler(w http.ResponseWriter, r *http.Request) {
-    // Log the Content-Type to ensure it's receiving the correct type
-    log.Println("Content-Type:", r.Header.Get("Content-Type"))
-
-    // Read the raw request body and write it back as a response
-    body, err := io.ReadAll(r.Body)
-    if err != nil {
-        http.Error(w, "Unable to read request body", http.StatusBadRequest)
-        return
-    }
-
-    // Write the raw request body back to the response
-    w.Header().Set("Content-Type", "application/json")
-    w.Write(body)
-}
-func PostsHandler(w http.ResponseWriter, r *http.Request) {
-    switch r.Method {
-    case "POST":
-        posts.CreatePost(w, r)  // Call the CreatePost function for POST requests
-    case "GET":
-        posts.GetPosts(w, r)    // Call the GetPosts function for GET requests
-    default:
-        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-    }
-}
