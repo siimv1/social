@@ -32,6 +32,7 @@ const Login = () => {
     
                 // Salvestame tokeni localStorage'sse
                 localStorage.setItem('token', data.token);
+                localStorage.setItem('userId', data.user_id); 
     
                 // Kontrollime, kas token on localStorage's
                 const storedToken = localStorage.getItem('token');

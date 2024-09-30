@@ -1,17 +1,23 @@
 package auth
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"social-network/backend/pkg/db"
+	"time"
 
+	"github.com/golang-jwt/jwt" 
 	"golang.org/x/crypto/bcrypt"
 )
 
-// A simple in-memory session store (use a database for production)
-var sessionStore = make(map[string]string)
+// Secret key used to sign tokens (securely store this in production)
+var jwtKey = []byte("secret_key")
+
+// Claims represents the JWT claims
+type Claims struct {
+	UserID int `json:"user_id"`
+	jwt.StandardClaims
+}
 
 // LoginRequest represents the login request payload
 type LoginRequest struct {
@@ -19,17 +25,6 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-// generateSessionToken generates a random session token
-func generateSessionToken() (string, error) {
-	token := make([]byte, 32)
-	_, err := rand.Read(token)
-	if err != nil {
-		return "", err
-	}
-	return base64.URLEncoding.EncodeToString(token), nil
-}
-
-// LoginHandler handles user login requests
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -52,44 +47,45 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Compare passwords
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(loginReq.Password)); err != nil {
 		http.Error(w, "Invalid password", http.StatusUnauthorized)
 		return
 	}
 
-	// Generate session token (you can use JWT or session-based)
-	sessionToken, err := generateSessionToken()
+	// Create the JWT claims, which includes the user ID and expiry time
+	expirationTime := time.Now().Add(24 * time.Hour)
+	claims := &Claims{
+		UserID: userID, // userID obtained after validating user credentials
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	// Create the token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		http.Error(w, "Failed to generate session token", http.StatusInternalServerError)
+		http.Error(w, "Failed to create token", http.StatusInternalServerError)
 		return
 	}
 
-	// Store session token in your in-memory store
-	sessionStore[sessionToken] = loginReq.Email
-
-	// Return token in response (instead of a cookie, use Authorization header)
-	w.Header().Set("Authorization", "Bearer "+sessionToken)
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful", "token": sessionToken})
+	// Return the token in the response
+// Return the token and user ID in the response
+w.Header().Set("Content-Type", "application/json")
+json.NewEncoder(w).Encode(map[string]interface{}{
+    "token": tokenString,
+    "user_id": userID, // Tagastame ka kasutaja ID
+}) 
 }
 
-// LogoutHandler logs the user out by deleting the session token
+
+// LogoutHandler logs the user out by clearing the JWT token
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session_token")
-	if err != nil {
-		http.Error(w, "No session found", http.StatusBadRequest)
-		return
-	}
-	// Delete the session from the store
-	sessionToken := cookie.Value
-	delete(sessionStore, sessionToken)
-	// Remove the session cookie
+	// Clear the token cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:   "session_token",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1, // Expire immediately
+		Name:    "token",
+		Value:   "",
+		Expires: time.Now().Add(-time.Hour), // Expires immediately
 	})
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})

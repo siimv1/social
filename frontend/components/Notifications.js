@@ -1,51 +1,42 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import NotificationService from '../../utilities/notification_service';
+import { setNotifications, markAsRead } from '../../store/notificationSlice';
 
-function Notifications({ userID }) {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+const Notifications = ({ userId }) => {
+  const dispatch = useDispatch();
+  const notifications = useSelector((state) => state.notifications.notifications);
+  const notificationService = NotificationService();
 
   useEffect(() => {
-    async function fetchNotifications() {
-      try {
-        const response = await axios.get(`/notifications/unread?user_id=${userID}`);
-        setNotifications(response.data);
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
+    const fetchNotifications = async () => {
+      const unreadNotifications = await notificationService.getUnreadNotifications(userId);
+      dispatch(setNotifications(unreadNotifications));
+    };
 
     fetchNotifications();
-  }, [userID]);
+  }, [dispatch, userId]);
 
-  const markAsRead = async (notificationID) => {
-    try {
-      await axios.post(`/notifications/read/${notificationID}`);
-      setNotifications(notifications.filter(n => n.id !== notificationID));
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-    }
+  const handleMarkAsRead = async (id) => {
+    await notificationService.markNotificationAsRead(id);
+    dispatch(markAsRead(id));
   };
 
-  if (loading) return <div>Loading...</div>;
-
   return (
-    <div className="notification-dropdown">
+    <div>
       <h3>Notifications</h3>
-      {notifications.length === 0 ? (
-        <p>No new notifications</p>
-      ) : (
-        notifications.map(notification => (
-          <div key={notification.id} className="notification-item">
-            <p>{notification.message}</p>
-            <button onClick={() => markAsRead(notification.id)}>Mark as Read</button>
-          </div>
-        ))
-      )}
+      <ul>
+        {notifications.map((notification) => (
+          <li key={notification.id}>
+            <span>{notification.message}</span>
+            {!notification.read && (
+              <button onClick={() => handleMarkAsRead(notification.id)}>Mark as Read</button>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
-}
+};
 
 export default Notifications;

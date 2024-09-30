@@ -1,0 +1,110 @@
+.profile-container {
+    display: flex;
+    flex-direction: column;
+    background-color: #f0f2f5;
+    min-height: 100vh;
+}
+
+.profile-content {
+    display: flex;
+    margin-top: 80px;
+}
+
+.profile-sidebar-left,
+.profile-sidebar-right {
+    width: 250px;
+    background-color: white;
+    padding: 20px;
+    margin: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-main-content {
+    flex-grow: 1;
+    background-color: white;
+    padding: 20px;
+    margin: 20px 0;
+    margin-left: 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-info h2 {
+    margin-top: 0;
+}
+
+.profile-info p {
+    margin: 5px 0;
+}
+
+.avatar {
+    width: 100%;
+    border-radius: 50%;
+    margin-top: 10px;
+}
+
+.profile-settings,
+.profile-actions {
+    margin-top: 20px;
+}
+
+.profile-settings button,
+.profile-actions button {
+    background-color: #4267b2;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.profile-settings button:hover,
+.profile-actions button:hover {
+    background-color: #365899;
+}
+
+.user-posts .post {
+    background-color: #f0f2f5;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+
+.followers-following h2 {
+    margin-top: 0;
+}
+
+.followers-following p {
+    margin: 5px 0;
+}
+
+
+@media (max-width: 768px) {
+    .profile-content {
+        flex-direction: column;
+    }
+
+    .profile-sidebar-left,
+    .profile-sidebar-right,
+    .profile-main-content {
+        width: auto;
+        margin: 10px;
+    }
+}
+
+.logout-button {
+    position: absolute;
+    top: 45px;
+    right: 30px;
+    background-color: #004080;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.logout-button:hover {
+    background-color: #242eb6;
+}

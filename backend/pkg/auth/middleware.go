@@ -1,28 +1,34 @@
 package auth
 
 import (
+	"context"
 	"net/http"
+	"strings"
 )
 
-func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("session_token")
-		if err != nil {
-			if err == http.ErrNoCookie {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
-			http.Error(w, "Bad request", http.StatusBadRequest)
-			return
-		}
-		sessionToken := cookie.Value
-		email, exists := sessionStore[sessionToken]
-		if !exists {
+type contextKey string
+
+const UserIDKey contextKey = "userID"
+
+func AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenString := r.Header.Get("Authorization")
+		if tokenString == "" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		// Set the user's email in the request header
-		r.Header.Set("User-Email", email)
-		next(w, r)
-	}
+
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+		userID, err := ValidateToken(tokenString)
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// Add userID to context
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+
+	})
 }

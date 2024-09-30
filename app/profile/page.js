@@ -1,32 +1,32 @@
 "use client";
+
 import Link from 'next/link';
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import './home.css';
+import { useRouter } from 'next/navigation'; // Kasutame `useRouter` hook'i
+import './profile.css';
+import { apiRequest } from '../apiclient';
+import PostList from '../posts/PostList';  // Import the PostList component
+
 
 const Home = () => {
     const router = useRouter();
     const [profileData, setProfileData] = useState(null);
+    const [followers, setFollowers] = useState([]);
+    const [following, setFollowing] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
     const [isPublicProfile, setIsPublicProfile] = useState(true);
 
-    const isOwnProfile = true;  
-
     const toggleProfileVisibility = () => {
-        setIsPublicProfile(prev => !prev);
+        setIsPublicProfile((prev) => !prev);
     };
 
     const handleLogout = async () => {
+        localStorage.removeItem('token');
         router.push('/login');
     };
 
-    const handleBack = () => {
-        router.back();
-    };
-
-    // Profiili andmete hankimine
     useEffect(() => {
         const fetchProfileData = async () => {
             const token = localStorage.getItem('token');
@@ -34,23 +34,10 @@ const Home = () => {
                 router.push('/login');
                 return;
             }
-
+        
             try {
-                const response = await fetch('http://localhost:8080/profile', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Failed to fetch profile');
-                }
-
-                const data = await response.json();
-                setProfileData(data); // Salvestame andmed profiili jaoks
+                const data = await apiRequest('/profile', 'GET');
+                setProfileData(data);
                 setLoading(false);
             } catch (error) {
                 setError(error.message);
@@ -58,8 +45,28 @@ const Home = () => {
             }
         };
 
+        const fetchFollowers = async () => {
+            try {
+                const data = await apiRequest("/followers/list", "GET");
+                setFollowers(data.followers || []);
+            } catch (error) {
+                console.error("Failed to fetch followers:", error.message);
+            }
+        };
+
+        const fetchFollowing = async () => {
+            try {
+                const data = await apiRequest("/following/list", "GET");
+                setFollowing(data.following || []);
+            } catch (error) {
+                console.error("Failed to fetch following:", error.message);
+            }
+        };
+
         fetchProfileData();
-    }, [router]);
+        fetchFollowers();
+        fetchFollowing();
+    }, []);
 
     if (loading) {
         return <div>Loading...</div>;
@@ -72,10 +79,12 @@ const Home = () => {
     return (
         <div className="home-container">
             <div className="home-header">
-                <Link href="/profile">
+                <Link href={`/profile/${profileData?.id}`}>
                     <Image src="/profile.png" alt="Profile" width={100} height={100} className="profile-pic" />
                 </Link>
-                <h1>Social Network</h1>
+                <Link href="/home" style={{ textDecoration: 'none', color: 'inherit' }} >
+                    <h1>Social Network</h1>
+                </Link>
                 <div className="header-buttons">
                     <button className="notification-button">
                         <Image src="/notification.png" alt="Notifications" width={40} height={40} />
@@ -83,56 +92,62 @@ const Home = () => {
                     <button className="messenger-button">
                         <Image src="/messenger.png" alt="Messenger" width={50} height={50} />
                     </button>
+                    <button className="logout-button" onClick={handleLogout}>Log Out</button>
                 </div>
-                <button className="logout-button" onClick={handleLogout}>Log Out</button>
             </div>
 
             <div className="home-sidebar-left">
                 <div className="profile-info">
-                    <h2>{profileData.first_name} {profileData.last_name}</h2>
-                    <p>Nickname: {profileData.nickname}</p>
-                    <p>Email: {profileData.email}</p>
-                    <p>Date of birth: {profileData ? new Date(profileData.date_of_birth).toISOString().split('T')[0] : 'Date of birth'}</p>
-                    <p>About Me: {profileData.about_me}</p>
-                    {profileData.avatar && (
+                    <h2>{profileData?.first_name} {profileData?.last_name}</h2>
+                    <p>Nickname: {profileData?.nickname}</p>
+                    <p>Email: {profileData?.email}</p>
+                    <p>Date of birth: {profileData?.date_of_birth ? new Date(profileData.date_of_birth).toLocaleDateString() : 'N/A'}</p>
+                    <p>About Me: {profileData?.about_me}</p>
+                    {profileData?.avatar && (
                         <img src={profileData.avatar} alt="Profile Avatar" className="avatar" />
                     )}
                 </div>
-
-                {isOwnProfile && (
-                    <div className="profile-settings">
-                        <button onClick={toggleProfileVisibility}>
-                            {isPublicProfile ? "Switch to Private Profile" : "Switch to Public Profile"}
-                        </button>
-                    </div>
-                )}
-
-                <button type="button" onClick={handleBack} className="back-button" style={{ marginTop: '10px' }}>Back</button>
+                <div className="profile-settings">
+                    <button onClick={toggleProfileVisibility}>
+                        {isPublicProfile ? 'Switch to Private Profile' : 'Switch to Public Profile'}
+                    </button>
+                    <button type="button" onClick={() => window.history.back()} className="back-button" style={{ marginTop: '10px' }}>
+                        Back
+                    </button>
+                </div>
             </div>
 
             <div className="home-sidebar-right">
-                <div className="followers-following">
-                    <h2>Followers</h2>
-                    <p>Follower 1</p>
-                    <p>Follower 2</p>
+    <h2>Following</h2> {/* Parandasime siin */}
+    {following.length > 0 ? (
+        following.map(followed => (
+            <p key={followed.id}>
+                <Link href={`/profile/${followed.id}`}>
+                    {followed.first_name} {followed.last_name}
+                </Link>
+            </p>
+        ))
+    ) : <p>Not following anyone yet.</p>}
+    
+    <h2>Followers</h2> {/* Parandasime siin */}
+    {followers.length > 0 ? (
+        followers.map(follower => (
+            <p key={follower.id}>
+                <Link href={`/profile/${follower.id}`}>
+                    {follower.first_name} {follower.last_name}
+                </Link>
+            </p>
+        ))
+    ) : <p>No followers yet.</p>}
+</div>
 
-                    <h2>Following</h2>
-                    <p>Following 1</p>
-                    <p>Following 2</p>
-                </div>
-            </div>
 
-            <div className="home-content">
-                <div className="user-posts">
-                    <h2>My posts</h2>
-                    <div className="post">
-                        <p>Post 1</p>
-                    </div>
-                    <div className="post">
-                        <p>Post 2</p>
-                    </div>
-                </div>
-            </div>
+<div className="home-content">
+  <div className="user-posts">
+    <h2>My posts</h2>
+    {profileData && <PostList userId={profileData.id} />}
+  </div>
+</div>
         </div>
     );
 };

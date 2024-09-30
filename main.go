@@ -6,48 +6,71 @@ import (
 	"social-network/backend/pkg/auth"
 	"social-network/backend/pkg/db"
 	"social-network/backend/pkg/followers"
-	"social-network/backend/pkg/notifications" // Teavituste pakett
+	"social-network/backend/pkg/following"
+	"social-network/backend/pkg/groups"
+	"social-network/backend/pkg/notifications"
+	"social-network/backend/pkg/posts"
+
 	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	// Andmebaasi ühendamine ja migratsioonide käivitamine
+	// Connect to the SQLite database
 	err := db.ConnectSQLite("database.db")
 	if err != nil {
-		log.Fatalf("Andmebaasiga ühendamine ebaõnnestus: %v", err)
+		log.Fatalf("Database connection failed: %v", err)
 	}
 	defer db.CloseSQLite()
+
+	// Run migrations
 	db.Migrate("backend/pkg/db/migrations")
 
-	// Route'ide seadistamine
-	http.HandleFunc("/register", auth.RegisterHandler)
-	http.HandleFunc("/login", auth.LoginHandler)
-	http.HandleFunc("/profile", auth.ProfileHandler)
-	http.HandleFunc("/followers", followers.FollowHandler)
-	http.HandleFunc("/followers/unfollow", followers.UnfollowHandler)
-	http.HandleFunc("/following", followers.GetFollowingHandler)
-	http.HandleFunc("/user", auth.UsersHandler)
- 
+	// Create a new router
+	router := mux.NewRouter()
 
-	
+	// Route configurations
+	router.HandleFunc("/register", auth.RegisterHandler).Methods("POST")
+	router.HandleFunc("/login", auth.LoginHandler).Methods("POST")
+	router.Handle("/profile", auth.AuthMiddleware(http.HandlerFunc(auth.ProfileHandler))).Methods("GET")
 
-	// Teavituste route'id
-	http.HandleFunc("/notifications/unread", notifications.HandleGetUnreadNotifications) // Kasutaja lugemata teavitused
-	http.HandleFunc("/notifications/read/", notifications.HandleMarkNotificationAsRead)  // Märgi teavitus loetuks
+	// Followers routes
+	router.Handle("/followers", auth.AuthMiddleware(http.HandlerFunc(followers.FollowHandler))).Methods("POST")
+	router.Handle("/followers/unfollow", auth.AuthMiddleware(http.HandlerFunc(followers.UnfollowHandler))).Methods("POST")
+	router.Handle("/followers/list", auth.AuthMiddleware(http.HandlerFunc(followers.GetFollowersHandler))).Methods("GET")
+	router.HandleFunc("/followers/list/{id}", followers.GetUserFollowersHandler).Methods("GET")
+	router.HandleFunc("/followers/status/{id}", followers.CheckFollowStatusHandler).Methods("GET")
 
-	log.Println("Route'id seadistatud edukalt.")
+	// Following routes
+	router.Handle("/following/list", auth.AuthMiddleware(http.HandlerFunc(following.GetFollowingHandler))).Methods("GET")
+	router.HandleFunc("/following/list/{id}", following.GetUserFollowingHandler).Methods("GET")
 
-	// CORS haldur
+	// User routes
+	router.HandleFunc("/users", auth.GetAllUsersHandler).Methods("GET")
+	router.HandleFunc("/users/{id}", auth.UserProfileHandler).Methods("GET")
+
+	// Post routes
+	router.HandleFunc("/posts/user", posts.GetPosts).Methods("GET")
+	router.HandleFunc("/posts", posts.CreatePost).Methods("POST")
+	router.HandleFunc("/posts/comments", posts.CreateComment).Methods("POST")
+
+	// Notification routes
+	router.Handle("/notifications/unread", auth.AuthMiddleware(http.HandlerFunc(notifications.HandleGetUnreadNotifications))).Methods("GET")
+	router.Handle("/notifications/read/{id}", auth.AuthMiddleware(http.HandlerFunc(notifications.HandleMarkNotificationAsRead))).Methods("POST")
+
+	router.HandleFunc("/groups/create", groups.CreateGroup).Methods("POST")
+	router.HandleFunc("/groups", groups.GetGroups).Methods("GET")
+
+	// CORS handler
 	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"*"}),                                           // Lubatud kõik päritolud
-		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),                      // Lubatud meetodid
-		handlers.AllowedHeaders([]string{"Content-Type", "Authorization", "User-Email"}), // Lubatud päised
+		handlers.AllowedOrigins([]string{"*"}),                                           // Allow all origins
+		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),                      // Allow these methods
+		handlers.AllowedHeaders([]string{"Content-Type", "Authorization", "User-Email"}), // Allow these headers
 	)
 
-	// Serveri käivitamine
-	log.Println("Server käivitati aadressil :8080")
-	if err := http.ListenAndServe("0.0.0.0:8081", corsHandler(http.DefaultServeMux)); err != nil {
-		log.Fatalf("Serveri käivitamine ebaõnnestus: %v", err)
+	// Start the server
+	log.Println("Server started on :8080")
+	if err := http.ListenAndServe("0.0.0.0:8080", corsHandler(router)); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
 	}
 }
-

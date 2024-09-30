@@ -5,6 +5,9 @@ import (
 	"log"
 	"net/http"
 	"social-network/backend/pkg/db"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 // UserList defineerib kasutaja struktuuri
@@ -13,19 +16,12 @@ type UserList struct {
 	Email     string `json:"email"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
-	Nickname  string `json:"nickname"` // Muudetud nickname'iks
+	Nickname  string `json:"nickname"`
 	IsOnline  bool   `json:"is_online"`
 }
 
-// UsersHandler on HTTP käitleja, mis tagastab kasutajate loendi
-func UsersHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Toome kõik kasutajad andmebaasist, sealhulgas ees- ja perekonnanimi
-	rows, err := db.DB.Query("SELECT id, email, first_name, last_name, nickname, is_online FROM users") // Kasutame õigeid veerge
+func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.DB.Query("SELECT id, email, first_name, last_name, nickname, is_online FROM users")
 	if err != nil {
 		log.Printf("Error fetching users: %v", err)
 		http.Error(w, "Failed to fetch users", http.StatusInternalServerError)
@@ -33,10 +29,9 @@ func UsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var users []UserList
+	var users []User
 	for rows.Next() {
-		var user UserList
-		// Lisatud ees- ja perekonnanime lugemine
+		var user User
 		if err := rows.Scan(&user.ID, &user.Email, &user.FirstName, &user.LastName, &user.Nickname, &user.IsOnline); err != nil {
 			log.Printf("Error scanning user: %v", err)
 			http.Error(w, "Failed to read user data", http.StatusInternalServerError)
@@ -45,7 +40,26 @@ func UsersHandler(w http.ResponseWriter, r *http.Request) {
 		users = append(users, user)
 	}
 
-	// Tagastame kasutajate nimekirja JSON formaadis
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"users": users})
+}
+
+func GetUserByIDHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Printf("Kasutaja ID: %s", vars["id"]) // Logime ID-d
+	idStr := vars["id"]
+	id, err := strconv.Atoi(idStr) // Konverteerib stringi int-iks
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	var user User
+	err = db.DB.QueryRow("SELECT id, first_name, last_name FROM users WHERE id = ?", id).Scan(&user.ID, &user.FirstName, &user.LastName)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(user)
 }

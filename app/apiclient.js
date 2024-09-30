@@ -1,26 +1,29 @@
-export const apiRequest = async (endpoint, method = 'GET', body = null) => {
-    const token = localStorage.getItem('token'); // Võtame tokeni localStorage'st
+export const apiRequest = async (endpoint, method = 'GET', body = null, parseJson = true) => {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`, // Parandatud interpolatsioon siin
+  };
 
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // Lisame Authorization päisesse
-    };
-
-    const options = {
-        method,
-        headers,
-    };
-
-    if (body) {
-        options.body = JSON.stringify(body);
-    }
-
-    const response = await fetch(`http://localhost:8080${endpoint}`, options);
+  try {
+    const response = await fetch(`http://localhost:8080${endpoint}`, { // Parandatud interpolatsioon siin
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : null,
+    });
 
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Network response was not ok');
+      // Handle HTTP errors
+      const errorText = await response.text();
+      throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorText}`); // Parandatud interpolatsioon siin
     }
 
-    return response.json();
+    if (parseJson) {
+      return response.json();
+    } else {
+      return response; // Return the raw response if parseJson is false
+    }
+  } catch (error) {
+    throw error;
+  }
 };
