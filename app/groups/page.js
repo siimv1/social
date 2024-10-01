@@ -5,56 +5,14 @@ import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '../apiclient';
+import CreateGroup from './CreateGroup';
 import './groups.css';
-
-
-const CreateGroup = ({ onGroupCreated }) => {
-    const [groupName, setGroupName] = useState('');
-    const [groupDescription, setGroupDescription] = useState('');
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await apiRequest('/groups/create', 'POST', {
-                name: groupName,
-                description: groupDescription,
-            });
-            if (response.status === 'success') {
-                onGroupCreated(response.group);
-                setGroupName(''); // Tühjendame sisendväljad pärast grupi loomist
-                setGroupDescription('');
-            }
-        } catch (error) {
-            console.error('Group creation failed:', error);
-        }
-    };
-
-    return (
-        <form onSubmit={handleSubmit}>
-            <input
-                type="text"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-                placeholder="Group Name"
-                required
-            />
-            <textarea
-                value={groupDescription}
-                onChange={(e) => setGroupDescription(e.target.value)}
-                placeholder="Group Description"
-                required
-            />
-            <button type="submit">Create Group</button>
-        </form>
-    );
-};
-
 
 
 
 const Home = () => {
-
-    
+    const [myGroups, setMyGroups] = useState([]); 
+    const [allGroups, setAllGroups] = useState([]); 
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -62,21 +20,32 @@ const Home = () => {
         router.push('/login');
     };
 
- 
-
     const handleBack = () => {
         router.back();
     };
 
-   
-
     const handleGroupCreated = (group) => {
         console.log('New group created:', group);
+        setMyGroups(prevGroups => [...prevGroups, group]); 
     };
+
+   
+    const loadAllGroups = async () => {
+        try {
+            const response = await apiRequest('/groups', 'GET');
+            setAllGroups(response); 
+        } catch (error) {
+            console.error('Failed to load groups:', error);
+        }
+    };
+
+    
+    useEffect(() => {
+        loadAllGroups();
+    }, []);
 
     return (
         <div className="home-container">
-
             {/* Header */}
             <div className="home-header">
                 <Link href="/profile">
@@ -96,35 +65,32 @@ const Home = () => {
                 <button className="logout-button" onClick={handleLogout}>Log Out</button>
             </div>
 
-
-
             {/* Left Sidebar */}
             <div className="home-sidebar-left">
-            <ul>
-                    <li><Link href="/profile"style={{ textDecoration: 'none', color: 'inherit' }}>My profile</Link></li>
-                    <li><Link href="/groups"style={{ textDecoration: 'none', color: 'inherit' }}>Groups</Link></li>
+                <ul>
+                    <li><Link href="/profile" style={{ textDecoration: 'none', color: 'inherit' }}>My profile</Link></li>
+                    <li><Link href="/groups" style={{ textDecoration: 'none', color: 'inherit' }}>Groups</Link></li>
                 </ul>
-
-
-
                 <button type="button" onClick={handleBack} className="back-button" style={{ marginTop: '10px' }}>
                     Back
                 </button>
-
             </div>
-
-
 
             {/* Right Sidebar */}
             <div className="home-sidebar-right">
                 <div>
                     <h2>All Groups</h2>
-                   
-                        <p>There are currently no created groups.</p>
-                
+                    {allGroups.length > 0 ? (
+                        <ul>
+                            {allGroups.map(group => (
+                                <li key={group.id}>{group.title}</li> 
+                            ))}
+                        </ul>
+                    ) : (
+                        <p>There are currently no groups available.</p>
+                    )}
                 </div>
             </div>
-
 
             {/* Main Content */}
             <div className="home-content">
@@ -135,12 +101,17 @@ const Home = () => {
 
                 <div className="my-groups">
                     <h2>My Groups</h2>
-                </div>
-                <div className="all-groups">
-                    <h2>All Groups</h2>
+                    {myGroups.length > 0 ? (
+                        <ul>
+                            {myGroups.map(group => (
+                                <li key={group.id}>{group.title}</li> 
+                            ))}
+                        </ul>
+                    ) : (
+                        <p>No groups created yet.</p>
+                    )}
                 </div>
             </div>
-           
         </div>
     );
 };

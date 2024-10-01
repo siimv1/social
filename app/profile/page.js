@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation'; // Kasutame `useRouter` hook'i
 import './profile.css';
 import { apiRequest } from '../apiclient';
-import PostList from '../posts/PostList';  // Import the PostList component
+import PostList from '../posts/PostList';  
 
 
 const Home = () => {

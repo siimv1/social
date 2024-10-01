@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { apiRequest } from '../../apiclient';
 import '../profile.css';
+import PostList from '../../posts/PostList.js';
+
 
 const UserProfile = () => {
     const router = useRouter(); // Navigatsioonimeetodite jaoks
@@ -215,15 +217,10 @@ const UserProfile = () => {
             </div>
 
             <div className="home-content">
-            <div className="user-posts">
-                    <h2>My posts</h2>
-                    <div className="post">
-                        <p>Post 1</p>
-                    </div>
-                    <div className="post">
-                        <p>Post 2</p>
-                    </div>
-                </div>
+                <div className="user-posts">
+                 <h2>My posts</h2>
+                 {userData && <PostList userId={userData.id} />}
+                 </div>
             </div>
         </div>
     );

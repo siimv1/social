@@ -53,19 +53,21 @@ func main() {
 	router.HandleFunc("/posts/user", posts.GetPosts).Methods("GET")
 	router.HandleFunc("/posts", posts.CreatePost).Methods("POST")
 	router.HandleFunc("/posts/comments", posts.CreateComment).Methods("POST")
+	
+
+	// Groups routes
+	router.HandleFunc("/groups/create", groups.CreateGroup).Methods("POST")
+	router.HandleFunc("/groups", groups.GetGroups).Methods("GET")
 
 	// Notification routes
 	router.Handle("/notifications/unread", auth.AuthMiddleware(http.HandlerFunc(notifications.HandleGetUnreadNotifications))).Methods("GET")
 	router.Handle("/notifications/read/{id}", auth.AuthMiddleware(http.HandlerFunc(notifications.HandleMarkNotificationAsRead))).Methods("POST")
 
-	router.HandleFunc("/groups/create", groups.CreateGroup).Methods("POST")
-	router.HandleFunc("/groups", groups.GetGroups).Methods("GET")
-
 	// CORS handler
 	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"*"}),                                           // Allow all origins
-		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),                      // Allow these methods
-		handlers.AllowedHeaders([]string{"Content-Type", "Authorization", "User-Email"}), // Allow these headers
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),
+		handlers.AllowedHeaders([]string{"Content-Type", "Authorization", "User-Email"}),
 	)
 
 	// Start the server

@@ -3,10 +3,9 @@ import axios from 'axios';
 
 const PostList = ({ userId, newPost }) => {
   const [posts, setPosts] = useState([]);
-  const [commentInputs, setCommentInputs] = useState({});
+  const [commentInputs, setCommentInputs] = useState({}); 
 
   const postBoxStyle = {
-    position: 'relative', // Added for positioning child elements
     border: '2px solid #ddd',
     borderRadius: '10px',
     padding: '15px',
@@ -36,24 +35,12 @@ const PostList = ({ userId, newPost }) => {
   };
 
   const submitButtonStyle = {
-    backgroundColor: '#007BFF',
-    color: '#FFFFFF',
+    backgroundColor: '#1877f2',
+    color: 'white',
     border: 'none',
-    borderRadius: '8px',
-    padding: '5px 14px',
+    borderRadius: '20px',
+    padding: '10px 15px',
     cursor: 'pointer',
-    fontSize: '14px',
-    boxShadow: '0 4px 15px rgba(0, 123, 255, 0.3)',
-    backgroundImage: 'linear-gradient(90deg, #0066ff 0%, #00ccff 100%)',
-  };
-
-  // New style for the "Created At" timestamp
-  const timestampStyle = {
-    position: 'absolute',
-    bottom: '10px',
-    right: '15px',
-    fontSize: '10px',
-    color: '#888',
   };
 
   useEffect(() => {
@@ -85,29 +72,31 @@ const PostList = ({ userId, newPost }) => {
     });
   };
 
-  const handleCommentSubmit = (postId) => {
+  const handleCommentSubmit = async (postId) => {
     if (!commentInputs[postId]) return;
 
     const newComment = {
-      postId,
-      author: 'CurrentUser', // Replace with the logged-in user's info
+      post_id: postId,
+      user_id: userId,  
       content: commentInputs[postId],
     };
 
-    setPosts((prevPosts) =>
-      prevPosts.map((post) =>
-        post.id === postId
-          ? { ...post, comments: post.comments ? [...post.comments, newComment] : [newComment] }
-          : post
-      )
-    );
+    try {
+      const response = await axios.post('http://localhost:8080/posts/comments', newComment);
+      const addedComment = response.data;
 
-    setCommentInputs({ ...commentInputs, [postId]: '' });
-  };
-
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+  
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? { ...post, comments: post.comments ? [...post.comments, addedComment] : [addedComment] }
+            : post
+        )
+      );
+      setCommentInputs({ ...commentInputs, [postId]: '' }); 
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
   };
 
   return (
@@ -118,14 +107,16 @@ const PostList = ({ userId, newPost }) => {
           {post.image && <img src={`http://localhost:8080/${post.image}`} alt="Post Image" style={imageStyle} />}
           {post.gif && <img src={`http://localhost:8080/${post.gif}`} alt="Post GIF" style={imageStyle} />}
           <p><strong>Privacy:</strong> {post.privacy}</p>
-
           {post.comments &&
-            post.comments.map((comment, index) => (
-              <div key={index} className="comment-container" style={commentContainerStyle}>
-                <span className="comment-author">{comment.author}:</span>
-                <span className="comment-text"> {comment.content}</span>
-              </div>
-            ))}
+  post.comments.map((comment, index) => (
+    <div key={index} className="comment-container" style={commentContainerStyle}>
+      <span className="comment-author">
+        {comment.first_name} {comment.last_name}:
+      </span>
+      <span className="comment-text"> {comment.content}</span>
+    </div>
+  ))}
+
 
           <div className="comment-input-box" style={commentContainerStyle}>
             <input
@@ -135,13 +126,12 @@ const PostList = ({ userId, newPost }) => {
               placeholder="Write a comment..."
               style={commentBoxStyle}
             />
-            <button onClick={() => handleCommentSubmit(post.id)} style={submitButtonStyle}>
-              Send
+            <button
+              onClick={() => handleCommentSubmit(post.id)}
+              style={submitButtonStyle}
+            >
+              Post
             </button>
-          </div>
-
-          <div style={timestampStyle}>
-            {formatDate(post.created_at)}
           </div>
         </div>
       ))}

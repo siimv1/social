@@ -1,12 +1,11 @@
 package groups
 
 import (
-	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
+	"social-network/backend/pkg/db"
 	"time"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type Group struct {
@@ -17,8 +16,6 @@ type Group struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-var db *sql.DB
-
 func CreateGroup(w http.ResponseWriter, r *http.Request) {
 	var group Group
 
@@ -28,14 +25,16 @@ func CreateGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := `INSERT INTO groups (title, description, creator_id) VALUES (?, ?, ?)`
-	result, err := db.Exec(query, group.Title, group.Description, group.CreatorID)
+	result, err := db.DB.Exec(query, group.Title, group.Description, group.CreatorID)
 	if err != nil {
+		log.Printf("Error executing query: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
+		log.Printf("Error retrieving last insert ID: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -48,7 +47,7 @@ func CreateGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetGroups(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, title, description, creator_id, created_at FROM groups")
+	rows, err := db.DB.Query("SELECT id, title, description, creator_id, created_at FROM groups")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

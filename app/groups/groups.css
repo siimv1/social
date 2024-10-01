@@ -287,18 +287,19 @@
     background-color: #f0f4f8; 
     border: 1px solid #d1d1d1; 
     border-radius: 8px; 
-    padding: 20px; 
-    width: 100%; 
+    padding:30px; 
+    width: 95%; 
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+   
 }
 
 .group-section h2 {
-    margin-bottom: 50px; /* Vahe pealkirja ja vormi vahel */
+    margin-bottom: 50px; 
 }
 
 .group-section form {
     display: flex;
-    flex-direction: column; /* Lahtrid üksteise all */
+    flex-direction: column; 
     padding: 10px;
 }
 
@@ -320,6 +321,10 @@
     font-size: 16px; 
     cursor: pointer; 
     transition: background-color 0.3s; 
+}
+
+.group-section textarea {
+    height: 150px;
 }
 
 .group-section button:hover {

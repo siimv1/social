@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './file.css'; // Ensure this CSS file is in the same directory
+import './file.css';
 
 const CreatePost = ({ onPostCreated, userId }) => {
   const [content, setContent] = useState('');
@@ -57,7 +57,6 @@ const CreatePost = ({ onPostCreated, userId }) => {
         onPostCreated(response.data);
       }
 
-      // Reset form
       setContent('');
       setPrivacy('public');
       setImage(null);
