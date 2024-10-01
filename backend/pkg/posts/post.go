@@ -46,18 +46,19 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
     }
 
     userIDStr := r.FormValue("user_id")
-    post.UserID, err = strconv.Atoi(userIDStr)     
+    post.UserID, err = strconv.Atoi(userIDStr)
     if err != nil {
         http.Error(w, "Invalid user ID", http.StatusBadRequest)
         return
     }
-
     post.Content = r.FormValue("content")
     post.Privacy = r.FormValue("privacy")
 
-    post.Image = handleImageUpload(r)
-    post.GIF = handleGIFUpload(r)
+    post.Image = handleImageUpload(r)  
+    log.Printf("Image path assigned to post: %s", post.Image)
 
+    post.GIF = handleGIFUpload(r)  
+    log.Printf("GIF path assigned to post: %s", post.GIF)
 
     _, err = db.DB.Exec("INSERT INTO posts (user_id, content, image, gif, privacy) VALUES (?, ?, ?, ?, ?)",
         post.UserID, post.Content, post.Image, post.GIF, post.Privacy)

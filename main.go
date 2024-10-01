@@ -53,7 +53,9 @@ func main() {
 	router.HandleFunc("/posts/user", posts.GetPosts).Methods("GET")
 	router.HandleFunc("/posts", posts.CreatePost).Methods("POST")
 	router.HandleFunc("/posts/comments", posts.CreateComment).Methods("POST")
-	
+	// Serve static files from the "uploads" directory
+	router.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads/"))))
+
 
 	// Groups routes
 	router.HandleFunc("/groups/create", groups.CreateGroup).Methods("POST")
