@@ -10,6 +10,7 @@ import (
 	"social-network/backend/pkg/groups"
 	"social-network/backend/pkg/notifications"
 	"social-network/backend/pkg/posts"
+    "social-network/backend/pkg/chat"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -64,6 +65,10 @@ func main() {
 	// Notification routes
 	router.Handle("/notifications/unread", auth.AuthMiddleware(http.HandlerFunc(notifications.HandleGetUnreadNotifications))).Methods("GET")
 	router.Handle("/notifications/read/{id}", auth.AuthMiddleware(http.HandlerFunc(notifications.HandleMarkNotificationAsRead))).Methods("POST")
+
+	// Chat routes
+    router.HandleFunc("/ws", chat.HandleConnections)
+    go chat.HandleMessages()
 
 	// CORS handler
 	corsHandler := handlers.CORS(

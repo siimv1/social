@@ -8,14 +8,20 @@ import { apiRequest } from '../apiclient';
 import './home.css';
 import CreatePost from '../posts/CreatePost';
 import PostList from '../posts/PostList';
+import Chat from '../chat/Chat'; // Ensure this is the correct import path
 
 const Home = () => {
     const [newPost, setNewPost] = useState(null);
     const [users, setUsers] = useState([]);
     const [followers, setFollowers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState(null); // Define a user state
+    const [user, setUser] = useState(null);
+    const [showChat, setShowChat] = useState(false); // Toggle state for chat box
     const router = useRouter();
+
+    const handleMessengerClick = () => {
+        setShowChat(!showChat); // Toggle the chat box on and off
+    };
 
     const handleLogout = async () => {
         localStorage.removeItem('token');
@@ -33,38 +39,35 @@ const Home = () => {
             )
         );
     };
+
     useEffect(() => {
         const fetchUsers = async () => {
-          try {
-            const data = await apiRequest("/users", "GET");
-            if (data && data.users) {
-              const usersWithDefaults = data.users.map(user => ({
-                ...user,
-                isFollowing: user.isFollowing ?? false,
-                isOnline: user.isOnline ?? false,
-              }));
-              setUsers(usersWithDefaults);
-      
-              // Use localStorage or a similar method to get the currently logged-in user ID
-              const loggedInUserId = localStorage.getItem("userId"); // Assuming userId is stored in local storage
-      
-              // Find and set the logged-in user based on ID
-              const currentUser = usersWithDefaults.find(u => u.id === parseInt(loggedInUserId));
-              if (currentUser) {
-                setUser(currentUser);
-              }
-            } else {
-              console.log("No users found");
+            try {
+                const data = await apiRequest("/users", "GET");
+                if (data && data.users) {
+                    const usersWithDefaults = data.users.map(user => ({
+                        ...user,
+                        isFollowing: user.isFollowing ?? false,
+                        isOnline: user.isOnline ?? false,
+                    }));
+                    setUsers(usersWithDefaults);
+
+                    const loggedInUserId = localStorage.getItem("userId"); 
+                    const currentUser = usersWithDefaults.find(u => u.id === parseInt(loggedInUserId));
+                    if (currentUser) {
+                        setUser(currentUser);
+                    }
+                } else {
+                    console.log("No users found");
+                }
+                setLoading(false);
+            } catch (error) {
+                console.error("Failed to fetch users:", error);
+                setLoading(false);
             }
-            setLoading(false);
-          } catch (error) {
-            console.error("Failed to fetch users:", error);
-            setLoading(false);
-          }
         };
-      
+
         fetchUsers();
-   
       
 
         const fetchFollowers = async () => {
@@ -93,7 +96,7 @@ const Home = () => {
                     <button className="notification-button">
                         <Image src="/notification.png" alt="Notifications" width={40} height={40} />
                     </button>
-                    <button className="messenger-button">
+                    <button className="messenger-button" onClick={handleMessengerClick}>
                         <Image src="/messenger.png" alt="Messenger" width={50} height={50} />
                     </button>
                 </div>
@@ -130,10 +133,10 @@ const Home = () => {
 
             {/* Main Content */}
             <div className="home-content">
-<div className="post-section">
-  <h2>Create a Post</h2>
-  {user ? <CreatePost onPostCreated={handlePostCreated} userId={user.id} /> : <p>Loading user data...</p>}
-</div>
+                <div className="post-section">
+                    <h2>Create a Post</h2>
+                    {user ? <CreatePost onPostCreated={handlePostCreated} userId={user.id} /> : <p>Loading user data...</p>}
+                </div>
 
                 <div className="timeline-section">
                     <h2>Your Timeline</h2>
@@ -143,6 +146,13 @@ const Home = () => {
                         <p>Loading user data...</p>
                     )}
                 </div>
+
+                {/* Chat Section */}
+                {showChat && (
+                    <div className="chat-section">
+                        <Chat /> {/* Include the Chat component */}
+                    </div>
+                )}
             </div>
         </div>
     );
