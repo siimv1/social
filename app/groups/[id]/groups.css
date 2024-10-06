@@ -1,0 +1,346 @@
+.home-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #4267B2; 
+    overflow: hidden; 
+    position: fixed; 
+    top: 0;
+    left: 0;
+    right: 0; 
+}
+
+.home-header {
+    background-color: #4267B2; 
+    color: white;
+    padding: 15px 30px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    position: fixed; 
+    top: 0;
+    left: 0;
+    right: 0; 
+    z-index: 10; 
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.home-header h1 {
+    flex-grow: 1;
+    /* margin: 0; */
+}
+
+.header-buttons {
+    display: flex;
+    align-items: center;
+    /* gap: 10px; */
+}
+
+.header-buttons button {
+    background: none;
+    border: none;
+    padding: 0;
+    /* margin-left: 10px; */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+
+.messenger-button{
+    border-radius: 50%;
+    margin-right: 115px;
+    position: absolute; 
+    right: 40px;
+}
+
+.notification-button{
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    margin-right: 115px;
+    position: absolute; 
+    right: 100px;
+}
+
+.profile-pic {
+    border-radius: 50%;
+    /* width: 50px; */
+    /* height: 120px; */
+    margin-right: 15x;
+    position: absolute;
+    top: 15px;
+    left: 50px;
+}
+
+.home-sidebar-left,
+.home-sidebar-right {
+    
+    width: 250px;
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    margin-top: 130px; 
+    position: fixed; 
+    height: calc(100vh - 60px); 
+    overflow-y: auto; 
+}
+
+.home-sidebar-left ul,
+.home-sidebar-right ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.home-sidebar-left {
+    left: 0; 
+}
+
+.home-sidebar-right {
+    right: 0; 
+}
+
+
+.home-sidebar-left li,
+.home-sidebar-right li {
+    font-size: 18px;
+    padding: 10px;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.home-sidebar-left li:hover ,
+.home-sidebar-right li:hover {
+    background-color: #e9ecef;
+    border-radius: 4px;
+}
+
+.home-content {
+  
+    flex-grow: 1;
+    margin-left: 280px;
+    margin-right: 280px;
+    padding: 50px;
+    margin-top: 130px; 
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding-right: 5%;
+   
+}
+
+.post-section {
+    margin-bottom: 40px;
+}
+
+.post-section textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.post-button {
+    background-color: #4267b2;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.post-button:hover {
+    background-color: #365899;
+}
+
+.timeline-section {
+    margin-top: 20px;
+}
+
+.timeline-section .post {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-section .post h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.timeline-section .post p {
+    font-size: 16px;
+    color: #666;
+}
+
+
+.logout-button {
+    position: absolute;
+    top: 45px;
+    right: 30px;
+    background-color: #004080;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.logout-button:hover {
+    background-color: #242eb6;
+}
+
+.user-item {
+    background-color: #f8f9fa;
+    padding: 15px; 
+    border-radius: 8px; 
+    margin-bottom: 10px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    transition: background-color 0.3s ease; 
+}
+
+.user-item:hover {
+    background-color: #e2e6ea; 
+}
+
+.user-item p {
+    margin: 0; 
+    font-size: 16px; 
+}
+
+.user-item.online {
+    color: green; 
+}
+
+.user-item.offline {
+    color: red; 
+}
+
+/* Nupu stiilid */
+.follow-button, .unfollow-button, .pending-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 5px;
+}
+
+/* "Follow" nupp */
+.follow-button {
+    background-color: #007bff; 
+    color: white; 
+    transition: background-color 0.3s;
+}
+
+.follow-button:hover {
+    background-color: #0056b3; 
+}
+
+/* "Unfollow" nupp */
+.unfollow-button {
+    background-color: #dc3545; 
+    color: white; 
+    transition: background-color 0.3s;
+}
+
+.unfollow-button:hover {
+    background-color: #c82333; 
+}
+
+/* "Pending" nupp */
+.pending-button {
+    background-color: #ffc107; 
+    color: white; 
+}
+
+
+
+.back-button {
+    background-color: #4267b2;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.back-button:hover {
+    background-color: #365899;
+}
+
+
+.group-section {
+    background-color: #f0f4f8; 
+    border: 1px solid #d1d1d1; 
+    border-radius: 8px; 
+    padding:30px; 
+    width: 95%; 
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+   
+}
+
+.group-section h2 {
+    margin-bottom: 50px; 
+}
+
+.group-section form {
+    display: flex;
+    flex-direction: column; 
+    padding: 10px;
+}
+
+.group-section input,
+.group-section textarea {
+    padding: 10px; 
+    margin-bottom: 15px; 
+    border: 1px solid #ccc;
+    border-radius: 4px; 
+    font-size: 16px; 
+}
+
+.group-section button {
+    background-color: #4267B2; 
+    color: white; 
+    padding: 10px; 
+    border: none; 
+    border-radius: 4px; 
+    font-size: 16px; 
+    cursor: pointer; 
+    transition: background-color 0.3s; 
+}
+
+.group-section textarea {
+    height: 150px;
+}
+
+.group-section button:hover {
+    background-color: #365899; 
+}
+
+.join-button,
+.event-button{
+    background-color: #4267B2; 
+    color: white; 
+    padding: 10px; 
+    border: none; 
+    border-radius: 4px; 
+    font-size: 16px; 
+    cursor: pointer; 
+    transition: background-color 0.3s; 
+    width:150px;
+    margin:10px;
+}

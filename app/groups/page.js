@@ -83,7 +83,9 @@ const Home = () => {
                     {allGroups.length > 0 ? (
                         <ul>
                             {allGroups.map(group => (
-                                <li key={group.id}>{group.title}</li> 
+                                <li key={group.id}>
+                                <Link href={`/groups/${group.id}`}style={{ textDecoration: 'none', color: 'inherit' }}>{group.title}</Link> 
+                            </li>
                             ))}
                         </ul>
                     ) : (
@@ -104,7 +106,9 @@ const Home = () => {
                     {myGroups.length > 0 ? (
                         <ul>
                             {myGroups.map(group => (
-                                <li key={group.id}>{group.title}</li> 
+                                <li key={group.id}>
+                                <Link href={`/groups/${group.id}`}style={{ textDecoration: 'none', color: 'inherit' }}>{group.title}</Link> 
+                            </li>
                             ))}
                         </ul>
                     ) : (

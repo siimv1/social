@@ -7,19 +7,25 @@ import { useRouter, useParams } from 'next/navigation';
 import { apiRequest } from '../../apiclient';
 import '../profile.css';
 import PostList from '../../posts/PostList.js';
+import Chat from '../../chat/Chat';
 
 
 const UserProfile = () => {
     const router = useRouter(); // Navigatsioonimeetodite jaoks
     const params = useParams(); // Saame route'i parameetrid
     const { id } = params; // Saame ID dünaamilisest route'ist
+    const loggedInUserId = 1; 
     const [userData, setUserData] = useState(null);
     const [isFollowing, setIsFollowing] = useState(false); // Jälgimise oleku haldamine
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [followers, setFollowers] = useState([]);
     const [following, setFollowing] = useState([]);
+  const [showChat, setShowChat] = useState(false); // State to toggle chat box visibility
 
+    const handleSendMessage = () => {
+        setShowChat(true); // Show the chat box when the button is clicked
+      };
     const handleLogout = async () => {
         localStorage.removeItem('token');
         router.push('/login');
@@ -179,12 +185,21 @@ const UserProfile = () => {
                         isFollowingInitial={isFollowing}
                         onFollowChange={handleFollowChange}
                     />
-                </div>
+                    
+                    <button onClick={handleSendMessage} className="send-message-btn">Send Message</button>
 
-                <button type="button" onClick={() => router.back()} className="back-button" style={{ marginTop: '10px' }}>
-                    Back
-                </button>
-            </div>
+                    {showChat && (
+                    <div className="chat-box">
+                        {console.log("Rendering Chat Component - Sender ID:", loggedInUserId, "Recipient ID:", id)}
+                        <Chat senderId={loggedInUserId} recipientId={id} />
+                            </div>
+                        )}
+                        </div>
+
+                        <button type="button" onClick={() => router.back()} className="back-button" style={{ marginTop: '10px' }}>
+                            Back
+                            </button>
+                    </div>
 
             <div className="home-sidebar-right">
                 <div className="followers-following">
@@ -218,10 +233,17 @@ const UserProfile = () => {
 
             <div className="home-content">
                 <div className="user-posts">
-                 <h2>My posts</h2>
-                 {userData && <PostList userId={userData.id} />}
-                 </div>
+                    <h2>My posts</h2>
+                    {userData && <PostList userId={userData.id} />}
+                </div>
             </div>
+
+            {/* Render the chat box dynamically in the bottom-right corner */}
+            {showChat && (
+                <div className="chat-box">
+                    <Chat senderId={loggedInUserId} recipientId={id} />
+                </div>
+            )}
         </div>
     );
 };

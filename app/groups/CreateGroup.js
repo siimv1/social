@@ -11,11 +11,14 @@ const CreateGroup = ({ onGroupCreated }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await apiRequest('/groups/create', 'POST', {
+           
+            const body = {
                 title: groupName,
                 description: groupDescription,
-                creator_id: 1,
-            });
+            };
+
+          
+            const response = await apiRequest('/groups/create', 'POST', body);
 
             if (response && response.id) {
                 onGroupCreated(response); 

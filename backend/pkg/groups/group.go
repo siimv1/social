@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"social-network/backend/pkg/auth"
 	"social-network/backend/pkg/db"
 	"time"
 )
@@ -17,12 +18,29 @@ type Group struct {
 }
 
 func CreateGroup(w http.ResponseWriter, r *http.Request) {
+
+	tokenStr := r.Header.Get("Authorization")
+	if tokenStr == "" {
+		http.Error(w, "Authorization token is required", http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := auth.ValidateToken(tokenStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	log.Printf("Creator ID: %d", userID)
+
 	var group Group
 
 	if err := json.NewDecoder(r.Body).Decode(&group); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	group.CreatorID = userID
 
 	query := `INSERT INTO groups (title, description, creator_id) VALUES (?, ?, ?)`
 	result, err := db.DB.Exec(query, group.Title, group.Description, group.CreatorID)

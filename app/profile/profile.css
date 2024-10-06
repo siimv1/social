@@ -108,3 +108,17 @@
 .logout-button:hover {
     background-color: #242eb6;
 }
+.chat-box {
+    position: fixed; 
+    bottom: 20px;    
+    right: 20px;     
+    width: 300px;    
+    height: 400px;   
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    z-index: 1000;  
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2); 
+    overflow: hidden;
+  }
+  

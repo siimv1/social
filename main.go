@@ -68,7 +68,6 @@ func main() {
 
 	// Chat routes
     router.HandleFunc("/ws", chat.HandleConnections)
-    go chat.HandleMessages()
 
 	// CORS handler
 	corsHandler := handlers.CORS(

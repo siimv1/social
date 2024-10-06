@@ -1,84 +1,94 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-const Chat = () => {
-  const [messages, setMessages] = useState([]); // Chat messages state
-  const [input, setInput] = useState(""); // Message input state
-  const wsRef = useRef(null); // Ref to store WebSocket instance
+const Chat = ({ senderId, recipientId }) => {
+  const [messages, setMessages] = useState([]); // Store chat messages
+  const [input, setInput] = useState(''); // Manage message input
+  const ws = useRef(null); // Store WebSocket instance
 
   useEffect(() => {
-    // Initialize WebSocket connection when component mounts
-    const socket = new WebSocket("ws://localhost:8080/ws");
-    wsRef.current = socket;
+    if (senderId && recipientId) {
+      const wsUrl = `ws://localhost:8080/ws?sender_id=${senderId}`;
+      console.log("WebSocket URL:", wsUrl);
 
-    socket.onopen = () => {
-      console.log("WebSocket connection established.");
-    };
+      ws.current = new WebSocket(wsUrl);
 
-    socket.onmessage = (event) => {
-      console.log("Received message:", event.data);
-      setMessages((prevMessages) => [...prevMessages, event.data]);
-    };
+      ws.current.onopen = () => {
+        console.log('WebSocket connection established.');
+      };
 
-    socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
+      ws.current.onmessage = (event) => {
+        try {
+          const parsedData = JSON.parse(event.data); // Parse the message if JSON
+          console.log("Received message:", parsedData);
+          setMessages((prevMessages) => [...prevMessages, parsedData]);
+        } catch (e) {
+          console.error("Failed to parse WebSocket message:", event.data);
+        }
+      };
 
-    socket.onclose = (event) => {
-      if (event.code !== 1000) { // 1000 = Normal Closure
-        console.warn(`WebSocket closed unexpectedly: [${event.code}] ${event.reason}`);
-      } else {
-        console.log("WebSocket connection closed normally.");
-      }
-    };
+      ws.current.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
 
-    // Cleanup WebSocket connection on component unmount
-    return () => {
-      if (wsRef.current) {
-        console.log("Cleaning up WebSocket...");
-        wsRef.current.close();
-      }
-    };
-  }, []);
-
-  // Function to handle sending a message
-  const sendMessage = () => {
-    if (input.trim() && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      console.log("Sending message:", input);
-      wsRef.current.send(input); // Send the input value through WebSocket
-      setInput(""); // Clear the input field after sending the message
+      ws.current.onclose = () => {
+        console.log("WebSocket connection closed.");
+      };
     } else {
-      console.warn("WebSocket not open, cannot send message.");
+      console.error("WebSocket URL cannot be constructed: senderId or recipientId is missing.");
+    }
+
+    return () => {
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
+  }, [senderId, recipientId]);
+
+  const sendMessage = () => {
+    if (input.trim() && ws.current && ws.current.readyState === WebSocket.OPEN) {
+      const message = {
+        sender_id: senderId,
+        recipient_id: Number(recipientId),
+        content: input,
+      };
+      console.log("Sending message:", message);
+
+      // Immediately update the UI to show the message
+      setMessages((prevMessages) => [...prevMessages, message]);
+
+      // Send the message to the WebSocket server
+      ws.current.send(JSON.stringify(message));
+      setInput('');
     }
   };
 
   return (
     <div style={styles.chatContainer}>
-      <h2 style={styles.chatHeader}>Chat</h2>
+      <h2 style={styles.chatHeader}>Chat with User {recipientId}</h2>
       <div style={styles.chatMessages}>
         {/* Display messages */}
         {messages.map((msg, index) => (
           <div key={index} style={styles.message}>
-            {msg}
+            {msg.sender_id === senderId
+              ? `User ${msg.sender_id}: ${msg.content}` // Show "User {ID}" for the sender
+              : `User ${msg.sender_id}: ${msg.content}`} {/* Show recipient's ID dynamically */}
           </div>
         ))}
       </div>
-
-      {/* Chat input and button at the bottom */}
       <div style={styles.chatInputContainer}>
         <input
           type="text"
-          value={input} // Bound to the input state
-          onChange={(e) => setInput(e.target.value)} // Update state when typing
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
-          style={styles.chatInput} // Apply style for input
+          style={styles.chatInput}
         />
-        <button onClick={sendMessage} style={styles.sendButton}>Send</button> {/* Apply style for button */}
+        <button onClick={sendMessage} style={styles.sendButton}>Send</button>
       </div>
     </div>
   );
 };
 
-// Inline CSS Styles
 const styles = {
   chatContainer: {
     display: 'flex',
@@ -91,19 +101,17 @@ const styles = {
     overflow: 'hidden',
   },
   chatHeader: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#4267B2',
     color: 'white',
-    padding: '10px',
+    padding: '8px',
     textAlign: 'center',
-    borderTopLeftRadius: '8px',
-    borderTopRightRadius: '8px',
   },
   chatMessages: {
-    flex: 1, // Takes up available space
+    flex: 1,
     padding: '10px',
     border: '1px solid #ddd',
     overflowY: 'scroll',
-    marginBottom: '10px', // Add some space before the input area
+    marginBottom: '10px',
   },
   message: {
     padding: '5px',
@@ -125,7 +133,7 @@ const styles = {
   },
   sendButton: {
     padding: '10px 15px',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#004080',
     border: 'none',
     color: 'white',
     cursor: 'pointer',
