@@ -5,44 +5,44 @@ const Chat = ({ senderId, recipientId }) => {
   const [input, setInput] = useState(''); // Manage message input
   const ws = useRef(null); // Store WebSocket instance
 
-  useEffect(() => {
-    if (senderId && recipientId) {
-      const wsUrl = `ws://localhost:8080/ws?sender_id=${senderId}`;
-      console.log("WebSocket URL:", wsUrl);
+useEffect(() => {
+  if (senderId && recipientId) {
+    const wsUrl = `ws://localhost:8080/ws?sender_id=${senderId}&recipient_id=${recipientId}`;
+    console.log("WebSocket URL:", wsUrl);
 
-      ws.current = new WebSocket(wsUrl);
+    ws.current = new WebSocket(wsUrl);
 
-      ws.current.onopen = () => {
-        console.log('WebSocket connection established.');
-      };
+    ws.current.onopen = () => {
+      console.log('WebSocket connection established.');
+    };
 
-      ws.current.onmessage = (event) => {
-        try {
-          const parsedData = JSON.parse(event.data); // Parse the message if JSON
-          console.log("Received message:", parsedData);
-          setMessages((prevMessages) => [...prevMessages, parsedData]);
-        } catch (e) {
-          console.error("Failed to parse WebSocket message:", event.data);
-        }
-      };
-
-      ws.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
-
-      ws.current.onclose = () => {
-        console.log("WebSocket connection closed.");
-      };
-    } else {
-      console.error("WebSocket URL cannot be constructed: senderId or recipientId is missing.");
-    }
-
-    return () => {
-      if (ws.current) {
-        ws.current.close();
+    ws.current.onmessage = (event) => {
+      try {
+        const parsedData = JSON.parse(event.data); // Parse the message if JSON
+        console.log("Received message:", parsedData);
+        setMessages((prevMessages) => [...prevMessages, parsedData]);
+      } catch (e) {
+        console.error("Failed to parse WebSocket message:", event.data);
       }
     };
-  }, [senderId, recipientId]);
+
+    ws.current.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    ws.current.onclose = () => {
+      console.log("WebSocket connection closed.");
+    };
+  }
+
+  return () => {
+    if (ws.current) {
+      console.log("Closing WebSocket connection...");
+      ws.current.close(); // Ensure WebSocket is closed gracefully
+    }
+  };
+}, [senderId, recipientId]);
+
 
   const sendMessage = () => {
     if (input.trim() && ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -70,8 +70,8 @@ const Chat = ({ senderId, recipientId }) => {
         {messages.map((msg, index) => (
           <div key={index} style={styles.message}>
             {msg.sender_id === senderId
-              ? `User ${msg.sender_id}: ${msg.content}` // Show "User {ID}" for the sender
-              : `User ${msg.sender_id}: ${msg.content}`} {/* Show recipient's ID dynamically */}
+              ? `You: ${msg.content}` // Show "You" for the sender
+              : `User ${msg.sender_id}: ${msg.content}`} {/* Show sender's ID dynamically */}
           </div>
         ))}
       </div>
@@ -89,6 +89,7 @@ const Chat = ({ senderId, recipientId }) => {
   );
 };
 
+// Define styles for the chat component
 const styles = {
   chatContainer: {
     display: 'flex',

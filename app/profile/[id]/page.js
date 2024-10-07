@@ -14,7 +14,6 @@ const UserProfile = () => {
     const router = useRouter(); // Navigatsioonimeetodite jaoks
     const params = useParams(); // Saame route'i parameetrid
     const { id } = params; // Saame ID dünaamilisest route'ist
-    const loggedInUserId = 1; 
     const [userData, setUserData] = useState(null);
     const [isFollowing, setIsFollowing] = useState(false); // Jälgimise oleku haldamine
     const [loading, setLoading] = useState(true);
@@ -22,7 +21,17 @@ const UserProfile = () => {
     const [followers, setFollowers] = useState([]);
     const [following, setFollowing] = useState([]);
   const [showChat, setShowChat] = useState(false); // State to toggle chat box visibility
+  const [loggedInUserId, setLoggedInUserId] = useState(null);
 
+  useEffect(() => {
+    const userId = localStorage.getItem('userId'); // Retrieve the logged-in user ID from localStorage
+    if (userId) {
+      setLoggedInUserId(parseInt(userId)); // Set the state with the actual user ID
+    } else {
+      router.push('/login'); // If user is not logged in, redirect to login
+    }
+  }, []);
+  
     const handleSendMessage = () => {
         setShowChat(true); // Show the chat box when the button is clicked
       };
@@ -238,7 +247,6 @@ const UserProfile = () => {
                 </div>
             </div>
 
-            {/* Render the chat box dynamically in the bottom-right corner */}
             {showChat && (
                 <div className="chat-box">
                     <Chat senderId={loggedInUserId} recipientId={id} />
