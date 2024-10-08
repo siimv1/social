@@ -96,7 +96,7 @@ const Home = () => {
                     <button className="notification-button">
                         <Image src="/notification.png" alt="Notifications" width={40} height={40} />
                     </button>
-                    <button className="messenger-button" onClick={handleMessengerClick}>
+                     <button className="messenger-button" onClick={handleMessengerClick}>
                         <Image src="/messenger.png" alt="Messenger" width={50} height={50} />
                     </button>
                 </div>

@@ -1,55 +1,58 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Picker from 'emoji-picker-react';  // Import the emoji picker component
 
 const Chat = ({ senderId, recipientId }) => {
   const [messages, setMessages] = useState([]); // Store chat messages
   const [input, setInput] = useState(''); // Manage message input
+  const [showPicker, setShowPicker] = useState(false); // Toggle the emoji picker
   const ws = useRef(null); // Store WebSocket instance
+  
+  // Establish WebSocket connection
+  useEffect(() => {
+    if (senderId && recipientId) {
+      const wsUrl = `ws://localhost:8080/ws?sender_id=${senderId}&recipient_id=${recipientId}`;
+      console.log("WebSocket URL:", wsUrl);
 
-useEffect(() => {
-  if (senderId && recipientId) {
-    const wsUrl = `ws://localhost:8080/ws?sender_id=${senderId}&recipient_id=${recipientId}`;
-    console.log("WebSocket URL:", wsUrl);
+      ws.current = new WebSocket(wsUrl);
 
-    ws.current = new WebSocket(wsUrl);
+      ws.current.onopen = () => {
+        console.log('WebSocket connection established.');
+      };
 
-    ws.current.onopen = () => {
-      console.log('WebSocket connection established.');
-    };
+      ws.current.onmessage = (event) => {
+        try {
+          const parsedData = JSON.parse(event.data); // Parse the message if JSON
+          console.log("Received message:", parsedData);
+          setMessages((prevMessages) => [...prevMessages, parsedData]);
+        } catch (e) {
+          console.error("Failed to parse WebSocket message:", event.data);
+        }
+      };
 
-    ws.current.onmessage = (event) => {
-      try {
-        const parsedData = JSON.parse(event.data); // Parse the message if JSON
-        console.log("Received message:", parsedData);
-        setMessages((prevMessages) => [...prevMessages, parsedData]);
-      } catch (e) {
-        console.error("Failed to parse WebSocket message:", event.data);
+      ws.current.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      ws.current.onclose = () => {
+        console.log("WebSocket connection closed.");
+      };
+    }
+
+    return () => {
+      if (ws.current) {
+        console.log("Closing WebSocket connection...");
+        ws.current.close(); // Ensure WebSocket is closed gracefully
       }
     };
+  }, [senderId, recipientId]);
 
-    ws.current.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    ws.current.onclose = () => {
-      console.log("WebSocket connection closed.");
-    };
-  }
-
-  return () => {
-    if (ws.current) {
-      console.log("Closing WebSocket connection...");
-      ws.current.close(); // Ensure WebSocket is closed gracefully
-    }
-  };
-}, [senderId, recipientId]);
-
-
+  // Handle sending messages
   const sendMessage = () => {
     if (input.trim() && ws.current && ws.current.readyState === WebSocket.OPEN) {
       const message = {
         sender_id: senderId,
         recipient_id: Number(recipientId),
-        content: input,
+        content: input,  // input now includes emojis if added
       };
       console.log("Sending message:", message);
 
@@ -58,8 +61,14 @@ useEffect(() => {
 
       // Send the message to the WebSocket server
       ws.current.send(JSON.stringify(message));
-      setInput('');
+      setInput(''); // Clear the input after sending the message
     }
+  };
+
+  // Handle emoji click event
+  const onEmojiClick = (emojiObject, event) => {
+    setInput((prevInput) => prevInput + emojiObject.emoji);  // Correctly access the emoji object
+    setShowPicker(false);  // Close the emoji picker after selecting an emoji
   };
 
   return (
@@ -76,6 +85,19 @@ useEffect(() => {
         ))}
       </div>
       <div style={styles.chatInputContainer}>
+        {/* Toggle Emoji Picker */}
+        <button onClick={() => setShowPicker((prev) => !prev)} style={styles.emojiButton}>
+          😀
+        </button>
+        
+        {/* Display Emoji Picker outside the chatContainer */}
+        {showPicker && (
+          <div style={styles.fixedPickerContainer}>
+            <Picker onEmojiClick={onEmojiClick} />
+          </div>
+        )}
+
+        {/* Message input field */}
         <input
           type="text"
           value={input}
@@ -83,6 +105,8 @@ useEffect(() => {
           placeholder="Type a message..."
           style={styles.chatInput}
         />
+        
+        {/* Send Button */}
         <button onClick={sendMessage} style={styles.sendButton}>Send</button>
       </div>
     </div>
@@ -94,7 +118,7 @@ const styles = {
   chatContainer: {
     display: 'flex',
     flexDirection: 'column',
-    width: '300px',
+    width: '350px',
     border: '1px solid #ddd',
     borderRadius: '8px',
     backgroundColor: '#f9f9f9',
@@ -139,6 +163,19 @@ const styles = {
     color: 'white',
     cursor: 'pointer',
     borderRadius: '4px',
+  },
+  emojiButton: {
+    padding: '3px',
+    border: 'none',
+    backgroundColor: '#fff',
+    cursor: 'pointer',
+    marginRight: '5px',
+  },
+  fixedPickerContainer: {
+    position: 'fixed',  // Use fixed position to place it outside the chatContainer
+    bottom: '80px',
+    right: '50px',
+    zIndex: 1000,
   },
 };
 

@@ -8,6 +8,7 @@ import { apiRequest } from '../../apiclient';
 import '../profile.css';
 import PostList from '../../posts/PostList.js';
 import Chat from '../../chat/Chat';
+import { FaPaperPlane, FaArrowLeft } from 'react-icons/fa';
 
 
 const UserProfile = () => {
@@ -20,7 +21,7 @@ const UserProfile = () => {
     const [error, setError] = useState('');
     const [followers, setFollowers] = useState([]);
     const [following, setFollowing] = useState([]);
-  const [showChat, setShowChat] = useState(false); // State to toggle chat box visibility
+  const [showChat, setShowChat] = useState(false); 
   const [loggedInUserId, setLoggedInUserId] = useState(null);
 
   useEffect(() => {
@@ -195,7 +196,9 @@ const UserProfile = () => {
                         onFollowChange={handleFollowChange}
                     />
                     
-                    <button onClick={handleSendMessage} className="send-message-btn">Send Message</button>
+                    <button onClick={handleSendMessage} className="send-message-btn">
+                        <FaPaperPlane style={{ marginRight: '5px' }} /> 
+                              </button>
 
                     {showChat && (
                     <div className="chat-box">
@@ -205,9 +208,10 @@ const UserProfile = () => {
                         )}
                         </div>
 
-                        <button type="button" onClick={() => router.back()} className="back-button" style={{ marginTop: '10px' }}>
-                            Back
-                            </button>
+                        <button type="button" onClick={() => router.back()} className="back-button">
+  <FaArrowLeft style={{ marginRight: '5px' }} /> Back
+</button>
+
                     </div>
 
             <div className="home-sidebar-right">
@@ -249,6 +253,7 @@ const UserProfile = () => {
 
             {showChat && (
                 <div className="chat-box">
+                        <button className="close-button" onClick={() => setShowChat(false)}>X</button>
                     <Chat senderId={loggedInUserId} recipientId={id} />
                 </div>
             )}

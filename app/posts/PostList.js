@@ -53,7 +53,6 @@ const PostList = ({ userId, newPost }) => {
         const response = await axios.get(`http://localhost:8080/posts/user?user_id=${userId}`);
         setPosts([...new Map(response.data.map((post) => [post.id, post])).values()]);
       } catch (error) {
-        console.error('Error fetching posts:', error);
       }
     };
     fetchPosts();

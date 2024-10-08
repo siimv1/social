@@ -74,7 +74,6 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
         _, message, err := ws.ReadMessage()
         if err != nil {
             if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-                log.Printf("Error reading message: %v", err)
             }
             delete(userClients, senderID)
             break
