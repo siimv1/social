@@ -52,18 +52,11 @@
 }
 
 
-.messenger-button{
-    border-radius: 50%;
-    margin-right: 115px;
-    position: absolute; 
-    right: 40px;
-}
-
 .notification-button{
     border-radius: 50%;
     width: 50px;
     height: 50px;
-    margin-right: 115px;
+    margin-right: 35px;
     position: absolute; 
     right: 100px;
 }

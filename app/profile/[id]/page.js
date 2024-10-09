@@ -8,41 +8,47 @@ import { apiRequest } from '../../apiclient';
 import '../profile.css';
 import PostList from '../../posts/PostList.js';
 import Chat from '../../chat/Chat';
+import PendingFollowRequests from '../../requests/page.js';
 import { FaPaperPlane, FaArrowLeft } from 'react-icons/fa';
 
-
 const UserProfile = () => {
-    const router = useRouter(); // Navigatsioonimeetodite jaoks
-    const params = useParams(); // Saame route'i parameetrid
-    const { id } = params; // Saame ID dünaamilisest route'ist
+    const router = useRouter();
+    const params = useParams();
+    const { id } = params;
+    const [loggedInUserId, setLoggedInUserId] = useState(null);
+    const profileUserId = parseInt(id);
+    const [isOwnProfile, setIsOwnProfile] = useState(false);
+
     const [userData, setUserData] = useState(null);
-    const [isFollowing, setIsFollowing] = useState(false); // Jälgimise oleku haldamine
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [followers, setFollowers] = useState([]);
     const [following, setFollowing] = useState([]);
-  const [showChat, setShowChat] = useState(false); 
-  const [loggedInUserId, setLoggedInUserId] = useState(null);
+    const [showChat, setShowChat] = useState(false);
+    const [followStatus, setFollowStatus] = useState('not-following');
 
-  useEffect(() => {
-    const userId = localStorage.getItem('userId'); // Retrieve the logged-in user ID from localStorage
-    if (userId) {
-      setLoggedInUserId(parseInt(userId)); // Set the state with the actual user ID
-    } else {
-      router.push('/login'); // If user is not logged in, redirect to login
-    }
-  }, []);
-  
+    useEffect(() => {
+        const userId = localStorage.getItem('userId'); // Retrieve the logged-in user ID from localStorage
+        if (userId) {
+          setLoggedInUserId(parseInt(userId)); // Set the state with the actual user ID
+          setIsOwnProfile(parseInt(userId) === profileUserId);
+        } else {
+          router.push('/login'); // If user is not logged in, redirect to login
+        }
+    }, [profileUserId]);
+
     const handleSendMessage = () => {
-        setShowChat(true); // Show the chat box when the button is clicked
-      };
+        setShowChat(true);
+    };
+
     const handleLogout = async () => {
         localStorage.removeItem('token');
         router.push('/login');
     };
 
-    const handleFollowChange = (followingStatus) => {
-        setIsFollowing(followingStatus); // Uuendame jälgimise olekut
+    const handleFollowChange = (newStatus) => {
+        setFollowStatus(newStatus);
+        console.log('Follow status updated to:', newStatus);
     };
 
     useEffect(() => {
@@ -54,10 +60,16 @@ const UserProfile = () => {
 
         const fetchUserData = async () => {
             try {
-                // Toome valitud kasutaja andmed ID järgi
                 const data = await apiRequest(`/users/${id}`, 'GET');
+                if (!data) {
+                    throw new Error('No user data returned');
+                }
+                console.log('User data:', data);
                 setUserData(data);
-                setIsFollowing(data.is_following); // Backend tagastab, kas praegune kasutaja jälgib seda profiili
+
+                // Set followStatus based on data.follow_status
+                setFollowStatus(data.follow_status || 'not-following');
+                console.log('Initial follow status:', data.follow_status);
             } catch (error) {
                 setError(error.message);
             } finally {
@@ -98,56 +110,67 @@ const UserProfile = () => {
         fetchFollowing();
     }, [id]);
 
-    const FollowButton = ({ followedID, isFollowingInitial, onFollowChange }) => {
-        const [isFollowingState, setIsFollowingState] = useState(isFollowingInitial);
-        const [loadingState, setLoadingState] = useState(false);
+    const FollowButton = ({ followedID, initialStatus, onFollowChange, isPublic }) => {
+        const [loading, setLoading] = useState(false);
+        const [followStatusState, setFollowStatusState] = useState(initialStatus);
 
         useEffect(() => {
-            setIsFollowingState(isFollowingInitial);
-        }, [isFollowingInitial]);
+            setFollowStatusState(initialStatus);
+        }, [initialStatus]);
 
         const handleFollow = async () => {
-            setLoadingState(true);
+            setLoading(true);
             try {
                 const response = await apiRequest('/followers', 'POST', { followed_id: followedID });
-                if (response.status === 'accepted') {
-                    setIsFollowingState(true);
-                    onFollowChange(true);
+                console.log('Follow API response:', response);
+        
+                if (response.status === 'pending') {
+                    setFollowStatusState('pending');
+                    onFollowChange('pending');
+                } else if (response.status === 'accepted') {
+                    setFollowStatusState('accepted');
+                    onFollowChange('accepted');
+                } else {
+                    console.error('Unexpected follow status:', response.status);
                 }
             } catch (error) {
                 console.error('Follow request failed:', error.message);
             } finally {
-                setLoadingState(false);
+                setLoading(false);
             }
         };
 
         const handleUnfollow = async () => {
-            setLoadingState(true);
+            setLoading(true);
             try {
                 const response = await apiRequest('/followers/unfollow', 'POST', { followed_id: followedID });
                 if (response.status === 'OK') {
-                    setIsFollowingState(false);
-                    onFollowChange(false);
+                    setFollowStatusState('not-following');
+                    onFollowChange('not-following');
                 }
             } catch (error) {
                 console.error('Unfollow request failed:', error.message);
             } finally {
-                setLoadingState(false);
+                setLoading(false);
             }
         };
 
+        if (followStatusState === 'pending') {
+            return <button disabled>Request Pending</button>;
+        }
+
+        if (followStatusState === 'accepted') {
+            return (
+                <button className="unfollow-button" onClick={handleUnfollow} disabled={loading}>
+                    {loading ? 'Unfollowing...' : 'Unfollow'}
+                </button>
+            );
+        }
+
         return (
-            <div>
-                {isFollowingState ? (
-                    <button className="unfollow-button" onClick={handleUnfollow} disabled={loadingState}>
-                        {loadingState ? 'Unfollowing...' : 'Unfollow'}
-                    </button>
-                ) : (
-                    <button className="follow-button" onClick={handleFollow} disabled={loadingState}>
-                        {loadingState ? 'Following...' : 'Follow'}
-                    </button>
-                )}
-            </div>
+            <button className="follow-button" onClick={handleFollow} disabled={loading}>
+                {loading ? 'Following...' : 'Follow'}
+            </button>
         );
     };
 
@@ -163,7 +186,7 @@ const UserProfile = () => {
         <div className="home-container" key={id}>
             <div className="home-header">
                 <Link href="/profile">
-                    <Image src="/profile.png" alt="Profile" width={100} height={100} className="profile-pic" />
+                    <Image src="/profile.png" alt="profile" width={100} height={100} className="profile-pic" />
                 </Link>
                 <Link href="/home" className="home-title-link">
                     <h1>Social Network</h1>
@@ -172,9 +195,7 @@ const UserProfile = () => {
                     <button className="notification-button">
                         <Image src="/notification.png" alt="Notifications" width={40} height={40} />
                     </button>
-                    <button className="messenger-button">
-                        <Image src="/messenger.png" alt="Messenger" width={50} height={50} />
-                    </button>
+
                 </div>
                 <button className="logout-button" onClick={handleLogout}>Log Out</button>
             </div>
@@ -182,78 +203,92 @@ const UserProfile = () => {
             <div className="home-sidebar-left">
                 <div className="profile-info">
                     <h2>{userData.first_name} {userData.last_name}</h2>
-                    <p>Nickname: {userData.nickname}</p>
-                    <p>Email: {userData.email}</p>
-                    <p>Date of birth: {new Date(userData.date_of_birth).toISOString().split('T')[0]}</p>
-                    <p>About Me: {userData.about_me}</p>
-                    {userData.avatar && (
-                        <img src={userData.avatar} alt="User Avatar" className="avatar" />
+                    {(!userData.is_private || followStatus === 'accepted' || isOwnProfile) ? (
+                        <>
+                            {userData.nickname && <p>Nickname: {userData.nickname}</p>}
+                            {userData.email && <p>Email: {userData.email}</p>}
+                            {userData.date_of_birth && <p>Date of birth: {new Date(userData.date_of_birth).toLocaleDateString()}</p>}
+                            {userData.about_me && <p>About Me: {userData.about_me}</p>}
+                            {userData.avatar && <img src={userData.avatar} alt="User Avatar" className="avatar" />}
+                        </>
+                    ) : (
+                        <p>This profile is private.</p>
                     )}
 
-                    <FollowButton
-                        followedID={parseInt(id)}
-                        isFollowingInitial={isFollowing}
-                        onFollowChange={handleFollowChange}
-                    />
-                    
-                    <button onClick={handleSendMessage} className="send-message-btn">
-                        <FaPaperPlane style={{ marginRight: '5px' }} /> 
-                              </button>
+                    {!isOwnProfile && (
+                        <FollowButton
+                            followedID={profileUserId}
+                            initialStatus={followStatus}
+                            onFollowChange={handleFollowChange}
+                            isPublic={userData.is_public}
+                        />
+                    )}
 
-                    {showChat && (
-                    <div className="chat-box">
-                        {console.log("Rendering Chat Component - Sender ID:", loggedInUserId, "Recipient ID:", id)}
-                        <Chat senderId={loggedInUserId} recipientId={id} />
-                            </div>
-                        )}
-                        </div>
+                    {isOwnProfile && <PendingFollowRequests profileUserId={profileUserId} />}
 
-                        <button type="button" onClick={() => router.back()} className="back-button">
-  <FaArrowLeft style={{ marginRight: '5px' }} /> Back
-</button>
+                    {!isOwnProfile && (
+                        <>
+                            <br />
+                            {(!userData.is_private || followStatus === 'accepted') && (
+                                <button onClick={handleSendMessage} className="send-message-btn">
+                                    <FaPaperPlane style={{ marginRight: '5px' }} /> Send Message
+                                </button>
+                            )}
+                        </>
+                    )}
+                </div>
 
-                    </div>
+                <button type="button" onClick={() => router.back()} className="back-button" style={{ marginTop: '10px' }}>
+                    <FaArrowLeft style={{ marginRight: '5px' }} /> Back
+                </button>
+            </div>
 
             <div className="home-sidebar-right">
-                <div className="followers-following">
-                    <h2>Following</h2>
-                    {following.length === 0 ? (
-                        <p>Not following anyone yet.</p>
-                    ) : (
-                        following.map(user => (
-                            <p key={user.id}>
-                                <Link href={`/profile/${user.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                    {user.first_name} {user.last_name}
+                <h2>Following</h2>
+                {userData && (!userData.is_private || followStatus === 'accepted' || isOwnProfile) ? (
+                    following.length > 0 ? (
+                        following.map(followed => (
+                            <p key={followed.id}>
+                                <Link href={`/profile/${followed.id}`}>
+                                    {followed.first_name} {followed.last_name}
                                 </Link>
                             </p>
                         ))
-                    )}
+                    ) : <p>Not following anyone yet.</p>
+                ) : (
+                    <p>Following is private.</p>
+                )}
 
-                    <h2>Followers</h2>
-                    {followers.length === 0 ? (
-                        <p>No followers yet.</p>
-                    ) : (
+                <h2>Followers</h2>
+                {userData && (!userData.is_private || followStatus === 'accepted' || isOwnProfile) ? (
+                    followers.length > 0 ? (
                         followers.map(follower => (
                             <p key={follower.id}>
-                                <Link href={`/profile/${follower.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                <Link href={`/profile/${follower.id}`}>
                                     {follower.first_name} {follower.last_name}
                                 </Link>
                             </p>
                         ))
-                    )}
-                </div>
+                    ) : <p>No followers yet.</p>
+                ) : (
+                    <p>Followers are private.</p>
+                )}
             </div>
 
             <div className="home-content">
                 <div className="user-posts">
-                    <h2>My posts</h2>
-                    {userData && <PostList userId={userData.id} />}
+                    <h2>{isOwnProfile ? 'My Posts' : `${userData.first_name}'s Posts`}</h2>
+                    {(!userData.is_private || followStatus === 'accepted' || isOwnProfile) ? (
+                        <PostList userId={userData.id} />
+                    ) : (
+                        <p>Posts are private.</p>
+                    )}
                 </div>
             </div>
 
             {showChat && (
                 <div className="chat-box">
-                        <button className="close-button" onClick={() => setShowChat(false)}>X</button>
+                    <button className="close-button" onClick={() => setShowChat(false)}>X</button>
                     <Chat senderId={loggedInUserId} recipientId={id} />
                 </div>
             )}

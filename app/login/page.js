@@ -10,6 +10,8 @@ const Login = () => {
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const loggedInUserId = parseInt(localStorage.getItem('userId'));
+
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -22,37 +24,34 @@ const Login = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password }), // Saadame emaili ja parooli backendile
+                body: JSON.stringify({ email, password }), 
             });
     
             if (response.ok) {
                 const data = await response.json();
-                console.log('Login response data:', data); // Kontrollime vastust ja tokenit
-                localStorage.setItem('userId', data.user_id); 
+                console.log('Login response data:', data); 
+                localStorage.setItem('userId', data.user_id);
 
-                // Salvestame tokeni localStorage'sse
                 localStorage.setItem('token', data.token);
 
-                // Kontrollime, kas token on localStorage's salvestatud
                 const storedToken = localStorage.getItem('token');
                 console.log('Stored token:', storedToken); 
     
                 setSuccess('Login successful!');
                 setTimeout(() => {
-                    router.push('/home'); // Liigume Home lehele pärast edukat sisselogimist
+                    router.push('/home'); 
                 }, 1000); 
             } else {
                 const errorData = await response.json();
                 setError(errorData.message || 'Login failed. Please try again.');
             }
-        } catch (err) {
+        } catch (parseError) {
             setError('Login failed. Please try again.');
         } finally {
             setLoading(false);
         }
     };
-    
-
+ 
     return (
         <div className="container">
             <div className="header">

@@ -8,7 +8,7 @@ import { apiRequest } from '../apiclient';
 import './home.css';
 import CreatePost from '../posts/CreatePost';
 import PostList from '../posts/PostList';
-import Chat from '../chat/Chat'; // Ensure this is the correct import path
+import Chat from '../chat/Chat'; 
 
 const Home = () => {
     const [newPost, setNewPost] = useState(null);
@@ -52,8 +52,8 @@ const Home = () => {
                     }));
                     setUsers(usersWithDefaults);
 
-                    const loggedInUserId = localStorage.getItem("userId"); 
-                    const currentUser = usersWithDefaults.find(u => u.id === parseInt(loggedInUserId));
+                    const loggedInUserId = parseInt(localStorage.getItem("userId")); 
+                    const currentUser = usersWithDefaults.find(u => u.id === loggedInUserId);
                     if (currentUser) {
                         setUser(currentUser);
                     }
@@ -82,6 +82,8 @@ const Home = () => {
         fetchFollowers();
     }, []);
 
+    const filteredUsers = users.filter(u => u.id !== user?.id);
+
     return (
         <div className="home-container">
             {/* Header */}
@@ -96,14 +98,11 @@ const Home = () => {
                     <button className="notification-button">
                         <Image src="/notification.png" alt="Notifications" width={40} height={40} />
                     </button>
-                     <button className="messenger-button" onClick={handleMessengerClick}>
-                        <Image src="/messenger.png" alt="Messenger" width={50} height={50} />
-                    </button>
+
                 </div>
                 <button className="logout-button" onClick={handleLogout}>Log Out</button>
             </div>
 
-            {/* Left Sidebar */}
             <div className="home-sidebar-left">
                 <ul>
                     <li><Link href="/profile" style={{ textDecoration: 'none', color: 'inherit' }} >My profile</Link></li>
@@ -111,16 +110,15 @@ const Home = () => {
                 </ul>
             </div>
 
-            {/* Right Sidebar */}
             <div className="home-sidebar-right">
                 <div>
-                    <h2>All Users</h2>
+                    <h2>Other users</h2>
                     {loading ? (
                         <p>Loading users...</p>
-                    ) : users.length === 0 ? (
+                    ) : filteredUsers.length === 0 ? (
                         <p>There are currently no registered users.</p>
                     ) : (
-                        users.map(user => (
+                        filteredUsers.map(user => (
                             <div key={user.id} className={`user-item ${user.isOnline ? 'online' : 'offline'}`}>
                                 <Link href={`/profile/${user.id}`} style={{ textDecoration: 'none', color: 'inherit' }} >
                                     <p>{user.first_name} {user.last_name}</p>
@@ -131,7 +129,6 @@ const Home = () => {
                 </div>
             </div>
 
-            {/* Main Content */}
             <div className="home-content">
                 <div className="post-section">
                     <h2>Create a Post</h2>
@@ -147,7 +144,6 @@ const Home = () => {
                     )}
                 </div>
 
-                {/* Chat Section */}
                 {showChat && (
                     <div className="chat-section">
                         <Chat /> {/* Include the Chat component */}

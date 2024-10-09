@@ -32,7 +32,7 @@ func GetUserFollowingHandler(w http.ResponseWriter, r *http.Request) {
         SELECT u.id, u.first_name, u.last_name, u.nickname
         FROM followers f
         JOIN users u ON u.id = f.followed_id
-        WHERE f.follower_id = ?`, userID)
+        WHERE f.follower_id = ? AND f.status = 'accepted'`, userID)
 	if err != nil {
 		log.Printf("Error fetching following users: %v", err)
 		http.Error(w, "Failed to fetch following users", http.StatusInternalServerError)

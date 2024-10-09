@@ -330,3 +330,38 @@
 .group-section button:hover {
     background-color: #365899; 
 }
+
+
+.my-groups ul,
+.home-sidebar-list {
+    display: flex; /* Teeb elemendid horisontaalselt järjestatud */
+    flex-wrap: wrap; /* Kui ei mahu ühele reale, liigub järgmisele reale */
+    padding: 0; /* Eemaldab paddingu ul-i ümbert */
+    margin: 0; /* Eemaldab ul-i vahed */
+    list-style-type: none; /* Eemaldab loenditähised */
+}
+
+.my-groups li,
+.home-sidebar-list {
+    background-color: #f0f4f8; 
+    border: 1px solid #d1d1d1; 
+    border-radius: 8px; 
+    padding: 20px; 
+    width: 250px; /* Võid seda suurust kohandada vastavalt vajadusele */
+    margin: 8px; /* Vahe elementide vahel */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: center; /* Tekst tsentreeritakse */
+}
+
+.my-groups a,
+.home-sidebar-list {
+    text-decoration: none; 
+    color: inherit; /* Jätab tekstivärvi pärituks */
+    font-weight: bold; /* Muudab teksti natuke silmatorkavamaks */
+}
+
+.home-sidebar-list{
+    width: 70%;
+   
+
+}

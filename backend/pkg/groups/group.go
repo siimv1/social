@@ -1,12 +1,15 @@
 package groups
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"social-network/backend/pkg/auth"
 	"social-network/backend/pkg/db"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 type Group struct {
@@ -84,4 +87,23 @@ func GetGroups(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(groups)
+}
+
+func GetGroupByID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	var group Group
+	err := db.DB.QueryRow("SELECT id, title, description, creator_id, created_at FROM groups WHERE id = ?", id).Scan(&group.ID, &group.Title, &group.Description, &group.CreatorID, &group.CreatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Group not found", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(group)
 }

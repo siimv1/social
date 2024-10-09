@@ -8,6 +8,7 @@ import (
     "time"
     "github.com/gorilla/websocket"
     "social-network/backend/pkg/db"
+    "social-network/backend/pkg/followers"
 )
 
 // Represents a WebSocket client
@@ -27,7 +28,6 @@ var upgrader = websocket.Upgrader{
 
 var userClients = make(map[int]*Client) 
 
-// Handle WebSocket connections
 func HandleConnections(w http.ResponseWriter, r *http.Request) {
     ws, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
@@ -37,7 +37,9 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
     defer ws.Close()
 
     senderIDStr := r.URL.Query().Get("sender_id")
-    recipientIDStr := r.URL.Query().Get("recipient_id") 
+    recipientIDStr := r.URL.Query().Get("recipient_id")
+
+    log.Printf("Received WebSocket connection request - Sender ID: %s, Recipient ID: %s", senderIDStr, recipientIDStr)
 
     if senderIDStr == "" || recipientIDStr == "" {
         log.Println("Invalid Sender or Recipient ID: IDs are missing")
@@ -56,12 +58,30 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    log.Printf("Checking mutual follow status between user %d and user %d", senderID, recipientID)
+
+    // Check if sender and recipient are mutually following each other
+    isMutualFollow, err := followers.CheckMutualFollowStatus(senderID, recipientID)
+    if err != nil {
+        log.Printf("Error checking mutual follow status between user %d and user %d: %v", senderID, recipientID, err)
+        ws.WriteMessage(websocket.TextMessage, []byte("Error occurred while checking follow status."))
+        return
+    }
+
+    if !isMutualFollow {
+        log.Printf("Private messaging is not allowed between user %d and user %d", senderID, recipientID)
+        ws.WriteMessage(websocket.TextMessage, []byte("Messaging not allowed: you must be mutually following each other."))
+        return
+    }
+
+    log.Printf("Users %d and %d are mutually following each other. Proceeding with chat.", senderID, recipientID)
+
     client := &Client{UserID: senderID, Conn: ws, Send: make(chan []byte, 256)}
     userClients[senderID] = client
 
     go client.WritePump()
 
-    // Retrieve and send chat history between the sender and recipient
+    log.Printf("Retrieving chat history between user %d and user %d", senderID, recipientID)
     chatHistory, err := retrieveChatHistory(senderID, recipientID)
     if err == nil {
         for _, msg := range chatHistory {
@@ -69,11 +89,12 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    // Read and handle incoming messages
+    log.Printf("Listening for incoming messages between user %d and user %d", senderID, recipientID)
     for {
         _, message, err := ws.ReadMessage()
         if err != nil {
             if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+                log.Printf("Unexpected WebSocket closure: %v", err)
             }
             delete(userClients, senderID)
             break

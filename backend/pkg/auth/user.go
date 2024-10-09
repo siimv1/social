@@ -46,11 +46,14 @@ func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetUserByIDHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Printf("Kasutaja ID: %s", vars["id"]) // Logime ID-d
 	idStr := vars["id"]
-	id, err := strconv.Atoi(idStr) // Konverteerib stringi int-iks
+	if idStr == "" {
+		http.Error(w, "User ID not provided", http.StatusBadRequest)
+		return
+	}
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 

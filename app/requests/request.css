@@ -1,0 +1,29 @@
+.accept-button{
+    background-color: green;
+    color: white;
+    padding: 10px 15px; 
+    border: none; 
+    border-radius: 5px;
+    cursor: pointer; 
+    margin-right: 10px;
+    transition: background-color 0.3s; 
+}
+
+.reject-button {
+    background-color: rgb(161, 15, 15);
+    color: white;
+    padding: 10px 15px; 
+    border: none; 
+    border-radius: 5px;
+    cursor: pointer; 
+    margin-right: 10px;
+    transition: background-color 0.3s; 
+}
+
+.accept-button:hover{
+    background-color: rgb(16, 68, 16);
+}
+
+.reject-button:hover {
+    background-color: red;
+}

@@ -6,8 +6,8 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation'; // Kasutame `useRouter` hook'i
 import './profile.css';
 import { apiRequest } from '../apiclient';
+import PendingFollowRequests from '../requests/page.js';
 import PostList from '../posts/PostList';  
-
 
 const Home = () => {
     const router = useRouter();
@@ -18,8 +18,18 @@ const Home = () => {
     const [loading, setLoading] = useState(true);
     const [isPublicProfile, setIsPublicProfile] = useState(true);
 
-    const toggleProfileVisibility = () => {
-        setIsPublicProfile((prev) => !prev);
+    const toggleProfileVisibility = async () => {
+        try {
+            const newVisibility = !isPublicProfile;
+            const response = await apiRequest('/profile/visibility', 'POST', { isPublic: newVisibility });
+            if (response.success) {
+                setIsPublicProfile(newVisibility);
+            } else {
+                console.error('Failed to update profile visibility');
+            }
+        } catch (error) {
+            console.error('Error updating profile visibility:', error.message);
+        }
     };
 
     const handleLogout = async () => {
@@ -38,6 +48,7 @@ const Home = () => {
             try {
                 const data = await apiRequest('/profile', 'GET');
                 setProfileData(data);
+                setIsPublicProfile(data.is_public);
                 setLoading(false);
             } catch (error) {
                 setError(error.message);
@@ -106,6 +117,9 @@ const Home = () => {
                     {profileData?.avatar && (
                         <img src={profileData.avatar} alt="Profile Avatar" className="avatar" />
                     )}
+
+                    {/* Include the PendingFollowRequests component */}
+                    <PendingFollowRequests profileUserId={profileData?.id} />
                 </div>
                 <div className="profile-settings">
                     <button onClick={toggleProfileVisibility}>
@@ -118,36 +132,35 @@ const Home = () => {
             </div>
 
             <div className="home-sidebar-right">
-    <h2>Following</h2> {/* Parandasime siin */}
-    {following.length > 0 ? (
-        following.map(followed => (
-            <p key={followed.id}>
-                <Link href={`/profile/${followed.id}`}>
-                    {followed.first_name} {followed.last_name}
-                </Link>
-            </p>
-        ))
-    ) : <p>Not following anyone yet.</p>}
+                <h2>Following</h2>
+                {following.length > 0 ? (
+                    following.map(followed => (
+                        <p key={followed.id}>
+                            <Link href={`/profile/${followed.id}`}>
+                                {followed.first_name} {followed.last_name}
+                            </Link>
+                        </p>
+                    ))
+                ) : <p>Not following anyone yet.</p>}
     
-    <h2>Followers</h2> {/* Parandasime siin */}
-    {followers.length > 0 ? (
-        followers.map(follower => (
-            <p key={follower.id}>
-                <Link href={`/profile/${follower.id}`}>
-                    {follower.first_name} {follower.last_name}
-                </Link>
-            </p>
-        ))
-    ) : <p>No followers yet.</p>}
-</div>
+                <h2>Followers</h2>
+                {followers.length > 0 ? (
+                    followers.map(follower => (
+                        <p key={follower.id}>
+                            <Link href={`/profile/${follower.id}`}>
+                                {follower.first_name} {follower.last_name}
+                            </Link>
+                        </p>
+                    ))
+                ) : <p>No followers yet.</p>}
+            </div>
 
-
-<div className="home-content">
-  <div className="user-posts">
-    <h2>My posts</h2>
-    {profileData && <PostList userId={profileData.id} />}
-  </div>
-</div>
+            <div className="home-content">
+                <div className="user-posts">
+                    <h2>My posts</h2>
+                    {profileData && <PostList userId={profileData.id} />}
+                </div>
+            </div>
         </div>
     );
 };

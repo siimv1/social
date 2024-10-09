@@ -8,11 +8,10 @@ import { apiRequest } from '../apiclient';
 import CreateGroup from './CreateGroup';
 import './groups.css';
 
-
-
 const Home = () => {
     const [myGroups, setMyGroups] = useState([]); 
     const [allGroups, setAllGroups] = useState([]); 
+    const [userId, setUserId] = useState(null); 
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -30,19 +29,39 @@ const Home = () => {
     };
 
    
+    useEffect(() => {
+        if (typeof window !== 'undefined') {  
+            const storedUserId = localStorage.getItem('userId');
+            if (storedUserId) {
+                setUserId(parseInt(storedUserId));
+            } else {
+                router.push('/login'); 
+            }
+        }
+    }, []);
+
+    
     const loadAllGroups = async () => {
         try {
             const response = await apiRequest('/groups', 'GET');
-            setAllGroups(response); 
+            if (response) {
+                const myGroups = response.filter(group => group.creator_id === userId); 
+                const otherGroups = response.filter(group => group.creator_id !== userId); 
+
+                setMyGroups(myGroups);
+                setAllGroups(otherGroups);
+            }
         } catch (error) {
             console.error('Failed to load groups:', error);
         }
     };
 
-    
+
     useEffect(() => {
-        loadAllGroups();
-    }, []);
+        if (userId) {
+            loadAllGroups();
+        }
+    }, [userId]);
 
     return (
         <div className="home-container">
@@ -79,17 +98,17 @@ const Home = () => {
             {/* Right Sidebar */}
             <div className="home-sidebar-right">
                 <div>
-                    <h2>All Groups</h2>
+                    <h2>All Other Groups</h2>
                     {allGroups.length > 0 ? (
                         <ul>
                             {allGroups.map(group => (
                                 <li key={group.id}>
-                                <Link href={`/groups/${group.id}`}style={{ textDecoration: 'none', color: 'inherit' }}>{group.title}</Link> 
-                            </li>
+                                    <Link href={`/groups/${group.id}`} className="home-sidebar-list" style={{ textDecoration: 'none', color: 'inherit' }}>{group.title}</Link> 
+                                </li>
                             ))}
                         </ul>
                     ) : (
-                        <p>There are currently no groups available.</p>
+                        <p>No other groups available.</p>
                     )}
                 </div>
             </div>
@@ -107,8 +126,8 @@ const Home = () => {
                         <ul>
                             {myGroups.map(group => (
                                 <li key={group.id}>
-                                <Link href={`/groups/${group.id}`}style={{ textDecoration: 'none', color: 'inherit' }}>{group.title}</Link> 
-                            </li>
+                                    <Link href={`/groups/${group.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>{group.title}</Link> 
+                                </li>
                             ))}
                         </ul>
                     ) : (

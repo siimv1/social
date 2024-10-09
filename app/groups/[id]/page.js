@@ -1,31 +1,50 @@
 "use client";
 
-
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { apiRequest } from '../../apiclient';
+import { useRouter, useParams } from 'next/navigation';
+import { apiRequest } from '../../apiclient'; 
 import Link from 'next/link';
 import Image from 'next/image';
 import './groups.css';
 
 const GroupDetail = () => {
     const router = useRouter();
-    const [group, setGroup] = React.useState(null);
-    const [allGroups, setAllGroups] = useState([]);
-    const [loading, setLoading] = React.useState(true);
+    const params = useParams(); 
+    const { id } = params; 
+    const [group, setGroup] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const loadGroup = async (id) => {
-        if (!id) return;
+    const loadGroup = async (groupId) => {
+        if (!groupId) {
+            console.log('No ID provided.');
+            return;
+        }
+        console.log('Fetching group with ID:', groupId);
         try {
-            const response = await apiRequest(`/groups/${id}`, 'GET');
-            console.log('Group data loaded:', response);
-            setGroup(response);
-            setLoading(false);
+            const response = await apiRequest(`/groups/${groupId}`, 'GET');
+            console.log('API response:', response);
+
+            if (response && typeof response === 'object' && response.id) {
+                setGroup(response); 
+            } else {
+                console.log('Unexpected response format or empty response:', response);
+            }
         } catch (error) {
             console.error('Failed to load group:', error);
+        } finally {
             setLoading(false);
         }
     };
+
+    
+    useEffect(() => {
+        if (id) {
+            console.log('Extracted ID:', id);
+            loadGroup(id); 
+        } else {
+            console.log('No ID found in the URL.');
+        }
+    }, [id]);
 
     const handleLogout = async () => {
         localStorage.removeItem('token');
@@ -36,28 +55,15 @@ const GroupDetail = () => {
         router.back();
     };
 
-    React.useEffect(() => {
-        if (router.query && router.query.id) {
-            loadGroup(router.query.id);
-        }
-    }, [router.query]);
-
     const handleJoinGroup = async () => {
         console.log('Joining group:', group.title);
+        // Implement join group functionality here
     };
 
     const handleAddEvent = async () => {
         console.log('Adding Event:', group.title);
+        // Implement add event functionality here
     };
-
-    // if (loading) {
-    //     return <p>Loading group details...</p>;
-    // }
-
-    // if (!group) {
-    //     return <p>No group found.</p>;
-    // }
-
 
 
     return (
@@ -83,10 +89,6 @@ const GroupDetail = () => {
 
             {/* Left Sidebar */}
             <div className="home-sidebar-left">
-                <ul>
-                    {/* <li><Link href="/profile" style={{ textDecoration: 'none', color: 'inherit' }}>My profile</Link></li>
-                       */}
-                </ul>
                 <button type="button" onClick={handleBack} className="back-button" style={{ marginTop: '10px' }}>
                     Back
                 </button>
@@ -94,15 +96,10 @@ const GroupDetail = () => {
 
             {/* Right Sidebar */}
             <div className="home-sidebar-right">
-
-
                 <button onClick={handleJoinGroup} className="join-button">Join Group</button>
-                <br>
-                </br>
-                <button onClick={handleAddEvent} className="event-button" >Add Event</button>
-                <br>
-                </br>
-
+                <br />
+                <button onClick={handleAddEvent} className="event-button">Add Event</button>
+                <br />
                 <div className="group-section">
                     <h4>All Events</h4>
                 </div>
@@ -110,25 +107,19 @@ const GroupDetail = () => {
 
             {/* Main Content */}
             <div className="home-content">
-                <div className="group-section">
-                    {/* <h1>{group.title}</h1>
-                        <p>{group.description}</p> */}
-                    <h1>Group Title</h1>
-
-                    {/* <button onClick={handleJoinGroup}>Join Group</button> */}
-                </div>
-                <br></br>
-                <div className="group-section">
-                    <h4>description</h4>
-                </div>
-                <br></br>
-                <div className="group-section">
-                    <h4>posts</h4>
-                </div>
+                {group ? (
+                    <div className="group-section">
+                        <h1>{group.title}</h1>
+                        <p>{group.description}</p>
+                       
+                       
+                    </div>
+                ) : (
+                    <div>No group found.</div> 
+                )}
             </div>
         </div>
     );
 };
-
 
 export default GroupDetail;

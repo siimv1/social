@@ -4,13 +4,13 @@ import (
 	"log"
 	"net/http"
 	"social-network/backend/pkg/auth"
+	"social-network/backend/pkg/chat"
 	"social-network/backend/pkg/db"
 	"social-network/backend/pkg/followers"
 	"social-network/backend/pkg/following"
 	"social-network/backend/pkg/groups"
 	"social-network/backend/pkg/notifications"
 	"social-network/backend/pkg/posts"
-    "social-network/backend/pkg/chat"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -34,6 +34,7 @@ func main() {
 	router.HandleFunc("/register", auth.RegisterHandler).Methods("POST")
 	router.HandleFunc("/login", auth.LoginHandler).Methods("POST")
 	router.Handle("/profile", auth.AuthMiddleware(http.HandlerFunc(auth.ProfileHandler))).Methods("GET")
+	router.Handle("/profile/visibility", auth.AuthMiddleware(http.HandlerFunc(auth.UpdateProfileVisibilityHandler))).Methods("POST")
 
 	// Followers routes
 	router.Handle("/followers", auth.AuthMiddleware(http.HandlerFunc(followers.FollowHandler))).Methods("POST")
@@ -41,6 +42,10 @@ func main() {
 	router.Handle("/followers/list", auth.AuthMiddleware(http.HandlerFunc(followers.GetFollowersHandler))).Methods("GET")
 	router.HandleFunc("/followers/list/{id}", followers.GetUserFollowersHandler).Methods("GET")
 	router.HandleFunc("/followers/status/{id}", followers.CheckFollowStatusHandler).Methods("GET")
+
+	router.Handle("/followers/requests", auth.AuthMiddleware(http.HandlerFunc(followers.GetPendingFollowRequestsHandler))).Methods("GET")
+	router.Handle("/followers/accept", auth.AuthMiddleware(http.HandlerFunc(followers.AcceptFollowRequestHandler))).Methods("POST")
+	router.Handle("/followers/reject", auth.AuthMiddleware(http.HandlerFunc(followers.RejectFollowRequestHandler))).Methods("POST")
 
 	// Following routes
 	router.Handle("/following/list", auth.AuthMiddleware(http.HandlerFunc(following.GetFollowingHandler))).Methods("GET")
@@ -57,17 +62,17 @@ func main() {
 	// Serve static files from the "uploads" directory
 	router.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads/"))))
 
-
 	// Groups routes
 	router.HandleFunc("/groups/create", groups.CreateGroup).Methods("POST")
 	router.HandleFunc("/groups", groups.GetGroups).Methods("GET")
+	router.HandleFunc("/groups/{id}", groups.GetGroupByID).Methods("GET")
 
 	// Notification routes
 	router.Handle("/notifications/unread", auth.AuthMiddleware(http.HandlerFunc(notifications.HandleGetUnreadNotifications))).Methods("GET")
 	router.Handle("/notifications/read/{id}", auth.AuthMiddleware(http.HandlerFunc(notifications.HandleMarkNotificationAsRead))).Methods("POST")
 
 	// Chat routes
-    router.HandleFunc("/ws", chat.HandleConnections)
+	router.HandleFunc("/ws", chat.HandleConnections)
 
 	// CORS handler
 	corsHandler := handlers.CORS(

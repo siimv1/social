@@ -12,7 +12,7 @@ import (
 
 func GetUserProfile(userID int) (*User, error) {
 	var user User
-	query := `SELECT id, email, first_name, last_name, date_of_birth, avatar, nickname, about_me FROM users WHERE id = ?`
+	query := `SELECT id, email, first_name, last_name, date_of_birth, avatar, nickname, about_me, is_public FROM users WHERE id = ?`
 	err := db.DB.QueryRow(query, userID).Scan(
 		&user.ID,
 		&user.Email,
@@ -22,8 +22,10 @@ func GetUserProfile(userID int) (*User, error) {
 		&user.Avatar,
 		&user.Nickname,
 		&user.AboutMe,
+		&user.IsPublic, // Include this field
 	)
 	if err != nil {
+		log.Printf("Error fetching user profile: %v", err)
 		return nil, err
 	}
 	return &user, nil

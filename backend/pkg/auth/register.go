@@ -20,6 +20,7 @@ type User struct {
 	AboutMe     string `json:"about_me,omitempty"`
 	Password    string `json:"password"`
 	IsOnline    bool   `json:"is_online"`
+	IsPublic    bool   `json:"is_public"`
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
