@@ -7,7 +7,6 @@ const Chat = ({ senderId, recipientId }) => {
   const [showPicker, setShowPicker] = useState(false); // Toggle the emoji picker
   const ws = useRef(null); // Store WebSocket instance
   
-  
   // Establish WebSocket connection
   useEffect(() => {
     if (senderId && recipientId) {

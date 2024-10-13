@@ -195,7 +195,6 @@ const UserProfile = () => {
                     <button className="notification-button">
                         <Image src="/notification.png" alt="Notifications" width={40} height={40} />
                     </button>
-
                 </div>
                 <button className="logout-button" onClick={handleLogout}>Log Out</button>
             </div>

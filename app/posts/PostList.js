@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const PostList = ({ userId, newPost }) => {
+const PostList = ({ userId, groupId, newPost }) => {  // Added groupId as a prop
   const [posts, setPosts] = useState([]);
-  const [commentInputs, setCommentInputs] = useState({}); 
+  const [commentInputs, setCommentInputs] = useState({});
 
   const postBoxStyle = {
     border: '2px solid #ddd',
@@ -45,18 +45,20 @@ const PostList = ({ userId, newPost }) => {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      if (!userId) {
-        console.error('User ID is undefined or invalid.');
-        return;
-      }
-      try {
-        const response = await axios.get(`http://localhost:8080/posts/user?user_id=${userId}`);
-        setPosts([...new Map(response.data.map((post) => [post.id, post])).values()]);
-      } catch (error) {
-      }
+       let url = `http://localhost:8080/posts/user?user_id=${userId}`;
+       if (groupId) {
+          url = `http://localhost:8080/posts?group_id=${groupId}`;  // Fetch group posts if groupId is provided
+       }
+
+       try {
+          const response = await axios.get(url);
+          setPosts([...new Map(response.data.map((post) => [post.id, post])).values()]);
+       } catch (error) {
+          console.error('Error fetching posts:', error);
+       }
     };
     fetchPosts();
-  }, [userId]);
+  }, [userId, groupId]);  // Fetch posts when userId or groupId changes
 
   useEffect(() => {
     if (newPost) {
@@ -84,7 +86,6 @@ const PostList = ({ userId, newPost }) => {
       const response = await axios.post('http://localhost:8080/posts/comments', newComment);
       const addedComment = response.data;
 
-  
       setPosts((prevPosts) =>
         prevPosts.map((post) =>
           post.id === postId
@@ -107,15 +108,14 @@ const PostList = ({ userId, newPost }) => {
           {post.gif && <img src={`http://localhost:8080/${post.gif}`} alt="Post GIF" style={imageStyle} />}
           <p><strong>Privacy:</strong> {post.privacy}</p>
           {post.comments &&
-  post.comments.map((comment, index) => (
-    <div key={index} className="comment-container" style={commentContainerStyle}>
-      <span className="comment-author">
-        {comment.first_name} {comment.last_name}:
-      </span>
-      <span className="comment-text"> {comment.content}</span>
-    </div>
-  ))}
-
+            post.comments.map((comment, index) => (
+              <div key={index} className="comment-container" style={commentContainerStyle}>
+                <span className="comment-author">
+                  {comment.first_name} {comment.last_name}:
+                </span>
+                <span className="comment-text"> {comment.content}</span>
+              </div>
+            ))}
 
           <div className="comment-input-box" style={commentContainerStyle}>
             <input
@@ -139,3 +139,4 @@ const PostList = ({ userId, newPost }) => {
 };
 
 export default PostList;
+

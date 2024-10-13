@@ -77,9 +77,7 @@ const Home = () => {
                     <button className="notification-button">
                         <Image src="/notification.png" alt="Notifications" width={40} height={40} />
                     </button>
-                    <button className="messenger-button">
-                        <Image src="/messenger.png" alt="Messenger" width={50} height={50} />
-                    </button>
+
                 </div>
                 <button className="logout-button" onClick={handleLogout}>Log Out</button>
             </div>

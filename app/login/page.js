@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react'; 
+import React, { useState, useEffect } from 'react'; 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -9,9 +9,16 @@ const Login = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
+    const [loggedInUserId, setLoggedInUserId] = useState(null); // Track userId from localStorage
     const router = useRouter();
-    const loggedInUserId = parseInt(localStorage.getItem('userId'));
 
+    // Use useEffect to access localStorage after the component mounts
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const userId = parseInt(localStorage.getItem('userId'));
+            setLoggedInUserId(userId);
+        }
+    }, []);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -30,12 +37,15 @@ const Login = () => {
             if (response.ok) {
                 const data = await response.json();
                 console.log('Login response data:', data); 
-                localStorage.setItem('userId', data.user_id);
-
-                localStorage.setItem('token', data.token);
-
-                const storedToken = localStorage.getItem('token');
-                console.log('Stored token:', storedToken); 
+                
+                if (typeof window !== 'undefined') {
+                    // Access localStorage only in browser
+                    localStorage.setItem('userId', data.user_id);
+                    localStorage.setItem('token', data.token);
+                    
+                    const storedToken = localStorage.getItem('token');
+                    console.log('Stored token:', storedToken); 
+                }
     
                 setSuccess('Login successful!');
                 setTimeout(() => {

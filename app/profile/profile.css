@@ -78,18 +78,6 @@
 }
 
 
-@media (max-width: 768px) {
-    .profile-content {
-        flex-direction: column;
-    }
-
-    .profile-sidebar-left,
-    .profile-sidebar-right,
-    .profile-main-content {
-        width: auto;
-        margin: 10px;
-    }
-}
 
 .logout-button {
     position: absolute;

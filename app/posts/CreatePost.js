@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './file.css';
 
-const CreatePost = ({ onPostCreated, userId }) => {
+const CreatePost = ({ onPostCreated, userId, groupId }) => {  // Added groupId as a prop (optional)
   const [content, setContent] = useState('');
   const [privacy, setPrivacy] = useState('public');
   const [image, setImage] = useState(null);
@@ -47,6 +47,7 @@ const CreatePost = ({ onPostCreated, userId }) => {
     formData.append('privacy', privacy);
     if (image) formData.append('image', image);
     if (gif) formData.append('gif', gif);
+    if (groupId) formData.append('group_id', groupId);  // Add group_id to form data if present
 
     try {
       const response = await axios.post('http://localhost:8080/posts', formData, {

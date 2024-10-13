@@ -3,7 +3,7 @@
     flex-direction: column;
     height: 100vh;
     background-color: #4267B2; 
-    overflow: hidden; 
+    overflow: auto; 
     position: fixed; 
     top: 0;
     left: 0;
@@ -130,6 +130,7 @@
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding-right: 5%;
+    overflow : auto;
    
 }
 

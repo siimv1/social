@@ -9,7 +9,15 @@ const PendingFollowRequests = ({ profileUserId }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const loggedInUserId = parseInt(localStorage.getItem('userId'));
+    const [loggedInUserId, setLoggedInUserId] = useState(null); // State to store userId
+
+    // UseEffect to safely access localStorage on the client side
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const userId = parseInt(localStorage.getItem('userId'));
+            setLoggedInUserId(userId);
+        }
+    }, []);
 
     // Check if the profile being viewed belongs to the logged-in user
     const isOwnProfile = loggedInUserId === profileUserId;
@@ -54,13 +62,6 @@ const PendingFollowRequests = ({ profileUserId }) => {
         }
     };
 
-    useEffect(() => {
-        // Fetch pending requests only if it's the logged-in user's profile
-        if (isOwnProfile) {
-            fetchPendingRequests();
-        }
-    }, [isOwnProfile]);
-
     // Return null if the profile being viewed is not the logged-in user's profile
     if (!isOwnProfile) {
         return null;
@@ -83,7 +84,7 @@ const PendingFollowRequests = ({ profileUserId }) => {
                 requests.map(req => (
                     <div key={req.id} className="request-item">
                         <p>
-                        <Link href={`/profile/${req.id}`}>
+                            <Link href={`/profile/${req.id}`}>
                                 {req.first_name} {req.last_name}
                             </Link>
                         </p>

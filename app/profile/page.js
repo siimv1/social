@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation'; // Kasutame `useRouter` hook'i
+import { useRouter } from 'next/navigation'; 
 import './profile.css';
 import { apiRequest } from '../apiclient';
 import PendingFollowRequests from '../requests/page.js';
@@ -99,9 +99,6 @@ const Home = () => {
                 <div className="header-buttons">
                     <button className="notification-button">
                         <Image src="/notification.png" alt="Notifications" width={40} height={40} />
-                    </button>
-                    <button className="messenger-button">
-                        <Image src="/messenger.png" alt="Messenger" width={50} height={50} />
                     </button>
                     <button className="logout-button" onClick={handleLogout}>Log Out</button>
                 </div>
