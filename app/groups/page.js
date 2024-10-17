@@ -14,9 +14,34 @@ const Home = () => {
     const [userId, setUserId] = useState(null); 
     const router = useRouter();
 
+    useEffect(() => {
+        const checkSession = async () => {
+            try {
+                const sessionResponse = await apiRequest('/session', 'GET');
+                const currentUserId = sessionResponse.user_id;
+                if (currentUserId) {
+                    setUserId(currentUserId);
+                } else {
+                    router.push('/login'); 
+                }
+            } catch (error) {
+                console.error('Error fetching session:', error);
+                router.push('/login');
+            }
+        };
+        
+        checkSession();
+    }, []);  // Käivitub ainult kord, kui komponent monteeritakse    
+    
+
     const handleLogout = async () => {
-        localStorage.removeItem('token');
-        router.push('/login');
+        try {
+            await apiRequest('/logout', 'POST');
+            setUserId(null);
+            router.push('/login');
+        } catch (error) {
+            console.error('Failed to log out:', error);
+        }
     };
 
     const handleBack = () => {
@@ -25,10 +50,24 @@ const Home = () => {
 
     const handleGroupCreated = (group) => {
         console.log('New group created:', group);
-        setMyGroups(prevGroups => [...prevGroups, group]); 
+    
+        // Kontrolli, kas grupp on juba myGroups hulgas olemas
+        setMyGroups((prevGroups) => {
+            const isGroupAlreadyPresent = prevGroups.some(g => g.id === group.id);
+            if (!isGroupAlreadyPresent) {
+                // Lisa uus grupp ainult siis, kui see pole juba olemas
+                return [...prevGroups, group];
+            }
+            return prevGroups;
+        });
+    
+        // Laadi kõik grupid uuesti
+        setTimeout(() => {
+            loadAllGroups(); // Edastame loodud grupi asemel lihtsalt kõik grupid
+        }, 500);  // 500ms ooteaeg
     };
+    
 
-   
     useEffect(() => {
         if (typeof window !== 'undefined') {  
             const storedUserId = localStorage.getItem('userId');
@@ -40,28 +79,45 @@ const Home = () => {
         }
     }, []);
 
-    
-    const loadAllGroups = async () => {
+    const loadAllGroups = async (createdGroup = null) => {
         try {
             const response = await apiRequest('/groups', 'GET');
             if (response) {
+                // Kontrolli, et userId on saadaval
+                if (!userId) {
+                    console.error("User ID is not available");
+                    return;
+                }
+    
+                // Filtreeri grupid kasutaja ID alusel
                 const myGroups = response.filter(group => group.creator_id === userId); 
-                const otherGroups = response.filter(group => group.creator_id !== userId); 
-
-                setMyGroups(myGroups);
-                setAllGroups(otherGroups);
+                const otherGroups = response.filter(group => group.creator_id !== userId);
+    
+                // Kui uus grupp on loodud, lisame selle myGroups hulka
+                if (createdGroup && createdGroup.creator_id === userId) {
+                    myGroups.push(createdGroup);
+                }
+    
+                setMyGroups(myGroups);  // Seadista "My Groups"
+                setAllGroups(otherGroups);  // Seadista "Other Groups"
             }
         } catch (error) {
             console.error('Failed to load groups:', error);
         }
-    };
-
+    };    
+    
 
     useEffect(() => {
         if (userId) {
-            loadAllGroups();
+            loadAllGroups();  // Lae grupid, kui kasutaja ID on saadaval
         }
-    }, [userId]);
+    }, [userId]);  // Käivitu ainult siis, kui userId muutub
+    
+
+    // Load all groups when the component mounts
+    useEffect(() => {
+        loadAllGroups();
+    }, []);
 
     return (
         <div className="home-container">
@@ -77,7 +133,6 @@ const Home = () => {
                     <button className="notification-button">
                         <Image src="/notification.png" alt="Notifications" width={40} height={40} />
                     </button>
-
                 </div>
                 <button className="logout-button" onClick={handleLogout}>Log Out</button>
             </div>
@@ -98,16 +153,17 @@ const Home = () => {
                 <div>
                     <h2>All Other Groups</h2>
                     {allGroups.length > 0 ? (
-                        <ul>
-                            {allGroups.map(group => (
-                                <li key={group.id}>
-                                    <Link href={`/groups/${group.id}`} className="home-sidebar-list" style={{ textDecoration: 'none', color: 'inherit' }}>{group.title}</Link> 
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p>No other groups available.</p>
-                    )}
+    <ul>
+        {allGroups.map(group => (
+            <li key={`allGroup-${group.id}`}>
+                <Link href={`/groups/${group.id}`} className="home-sidebar-list" style={{ textDecoration: 'none', color: 'inherit' }}>{group.title}</Link> 
+            </li>
+        ))}
+    </ul>
+) : (
+    <p>No other groups available.</p>
+)}
+
                 </div>
             </div>
 
@@ -121,16 +177,18 @@ const Home = () => {
                 <div className="my-groups">
                     <h2>My Groups</h2>
                     {myGroups.length > 0 ? (
-                        <ul>
-                            {myGroups.map(group => (
-                                <li key={group.id}>
-                                    <Link href={`/groups/${group.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>{group.title}</Link> 
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p>No groups created yet.</p>
-                    )}
+    <ul>
+        {myGroups.map(group => (
+            <li key={`myGroup-${group.id}`}>
+                <Link href={`/groups/${group.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>{group.title}</Link> 
+            </li>
+        ))}
+    </ul>
+) : (
+    <p>No groups created yet.</p>
+)}
+
+                
                 </div>
             </div>
         </div>

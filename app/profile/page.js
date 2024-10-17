@@ -20,41 +20,43 @@ const Home = () => {
 
     const toggleProfileVisibility = async () => {
         try {
-            const newVisibility = !isPublicProfile;
-            const response = await apiRequest('/profile/visibility', 'POST', { isPublic: newVisibility });
-            if (response.success) {
-                setIsPublicProfile(newVisibility);
-            } else {
-                console.error('Failed to update profile visibility');
-            }
+          const newVisibility = !isPublicProfile;
+          const response = await apiRequest('/profile/visibility', 'POST', { isPublic: newVisibility });
+          if (response.success) {
+            setIsPublicProfile(response.isPublic); // Update state based on response
+          } else {
+            console.error('Failed to update profile visibility');
+          }
         } catch (error) {
-            console.error('Error updating profile visibility:', error.message);
+          console.error('Error updating profile visibility:', error.message);
+        }
+      };
+      
+
+      const handleLogout = async () => {
+        try {
+            await apiRequest('/logout', 'POST');
+            router.push('/login'); // Otse suunamine logimislehele pärast väljalogimist
+        } catch (error) {
+            console.error('Failed to log out:', error);
         }
     };
-
-    const handleLogout = async () => {
-        localStorage.removeItem('token');
-        router.push('/login');
-    };
+    
+      
 
     useEffect(() => {
         const fetchProfileData = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                router.push('/login');
-                return;
-            }
-        
             try {
-                const data = await apiRequest('/profile', 'GET');
-                setProfileData(data);
-                setIsPublicProfile(data.is_public);
-                setLoading(false);
+              const data = await apiRequest('/profile', 'GET');
+              setProfileData(data);
+              setIsPublicProfile(data.is_public); // Use the correct field from backend
+              setLoading(false);
             } catch (error) {
-                setError(error.message);
-                setLoading(false);
+              setError(error.message);
+              setLoading(false);
             }
-        };
+          };
+        
 
         const fetchFollowers = async () => {
             try {
@@ -90,7 +92,7 @@ const Home = () => {
     return (
         <div className="home-container">
             <div className="home-header">
-                <Link href={`/profile/${profileData?.id}`}>
+            <Link href="/profile">
                     <Image src="/profile.png" alt="Profile" width={100} height={100} className="profile-pic" />
                 </Link>
                 <Link href="/home" style={{ textDecoration: 'none', color: 'inherit' }} >

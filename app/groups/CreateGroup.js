@@ -1,85 +1,71 @@
 "use client";
 
-
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiRequest } from '../apiclient';
 
-
 const CreateGroup = ({ onGroupCreated }) => {
+    const router = useRouter();
 
     const [groupName, setGroupName] = useState('');
     const [groupDescription, setGroupDescription] = useState('');
-    const [userId, setUserId] = useState(null);  
+    const [userId, setUserId] = useState(null);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
 
-
-    // console.log(localStorage.getItem('userId'));
-    // console.log("CreateGroup component received userId:", userId);
-    // console.log(localStorage.getItem('token'));
-
-
-    // Hangi kasutaja ID localStorage-st
     useEffect(() => {
-        if (typeof window !== 'undefined') {  
-            const storedUserId = localStorage.getItem('userId');
-            console.log("Stored userId:", storedUserId);
-
-            if (storedUserId) {
-                setUserId(parseInt(storedUserId)); 
-            } else {
-                setError('User ID not found');
-                window.location.href = '/login'; 
+        const checkSession = async () => {
+            try {
+                const sessionResponse = await apiRequest('/session', 'GET');
+                console.log("Session response:", sessionResponse);  // Lisa log, et kontrollida vastust
+                const userId = sessionResponse?.user_id;
+                if (!userId || isNaN(userId)) {
+                    throw new Error('No active session or invalid user ID');
+                }
+                setUserId(userId);
+            } catch (error) {
+                console.error('Error checking session:', error);
+                router.push('/login'); // Redirect to login if no session
             }
-        }
-    }, []);
+        };        
+
+        checkSession();
+    }, [router]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
         setSuccess(null);
-    
-        
-        let token = localStorage.getItem('token');
-    
-        if (!token) {
-            setError('Token is missing.');
+
+        if (!userId || isNaN(userId)) {
+            setError('User ID is missing or invalid.');
             return;
         }
-    
-        if (!userId) {
-            setError('User ID is missing.');
-            return;
-        }
-    
+
         try {
             const body = {
                 title: groupName,
                 description: groupDescription,
-                creator_id: userId,
+                creator_id: userId, // Veendu, et userId on kehtiv
             };
-    
-         
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': token, 
-            };
-    
-           
+
             const response = await fetch('http://localhost:8080/groups/create', {
                 method: 'POST',
-                headers: headers,
-                body: JSON.stringify(body)
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body),
+                credentials: 'include' // Ensure cookies are included with the request
             });
-    
+
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorText}`);
             }
-    
+
             const data = await response.json();
             console.log("API Response:", data);
-    
+
             if (data && data.id) {
                 onGroupCreated(data);
                 setGroupName('');
@@ -93,7 +79,6 @@ const CreateGroup = ({ onGroupCreated }) => {
             setError('Group creation failed. Please try again.');
         }
     };
-    
     return (
         <div className="create-group-container">
             <form onSubmit={handleSubmit}>
@@ -121,4 +106,4 @@ const CreateGroup = ({ onGroupCreated }) => {
     );
 };
 
-export default CreateGroup; 
+export default CreateGroup;

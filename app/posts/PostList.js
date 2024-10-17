@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const PostList = ({ userId, groupId, newPost }) => {  // Added groupId as a prop
+axios.defaults.withCredentials = true; // Ensure cookies are sent with requests
+
+const PostList = ({ userId, newPost, groupId }) => { // Add groupId as a prop
   const [posts, setPosts] = useState([]);
   const [commentInputs, setCommentInputs] = useState({});
+  const [viewerId, setViewerId] = useState(null); // For the logged-in user ID
 
   const postBoxStyle = {
     border: '2px solid #ddd',
@@ -43,28 +46,51 @@ const PostList = ({ userId, groupId, newPost }) => {  // Added groupId as a prop
     cursor: 'pointer',
   };
 
+  // Fetch session data on mount to retrieve viewer ID
   useEffect(() => {
-    const fetchPosts = async () => {
-       let url = `http://localhost:8080/posts/user?user_id=${userId}`;
-       if (groupId) {
-          url = `http://localhost:8080/posts?group_id=${groupId}`;  // Fetch group posts if groupId is provided
-       }
-
-       try {
-          const response = await axios.get(url);
-          setPosts([...new Map(response.data.map((post) => [post.id, post])).values()]);
-       } catch (error) {
-          console.error('Error fetching posts:', error);
-       }
-    };
-    fetchPosts();
-  }, [userId, groupId]);  // Fetch posts when userId or groupId changes
+    axios.get('http://localhost:8080/session', { withCredentials: true })
+      .then(response => {
+        setViewerId(response.data.user_id);
+      })
+      .catch(error => {
+        console.error('Session not active:', error);
+      });
+  }, []);
 
   useEffect(() => {
-    if (newPost) {
-      setPosts((prevPosts) => [newPost, ...prevPosts]);
+    if (userId && viewerId !== null) {
+      const fetchPosts = async () => {
+        try {
+          const response = await axios.get('http://localhost:8080/posts/user', {
+            params: {
+              user_id: userId,
+              viewer_id: viewerId,
+              group_id: groupId, // Include groupId in the API request
+            },
+            withCredentials: true,
+          });
+  
+          console.log('Posts data received:', response.data); // Log the data received
+  
+          if (response.data && Array.isArray(response.data)) {
+            const uniquePosts = response.data.filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);
+            console.log('Unique posts:', uniquePosts); // Log to see if duplicates were removed
+            setPosts(uniquePosts);
+          } else {
+            console.log('No posts or invalid data:', response.data);
+            setPosts([]);
+          }
+        } catch (error) {
+          console.error('Failed to fetch posts:', error);
+        }
+      };
+  
+      fetchPosts();
     }
-  }, [newPost]);
+  }, [userId, viewerId, groupId]);  // Include groupId as a dependency
+  
+
+  
 
   const handleCommentChange = (e, postId) => {
     setCommentInputs({
@@ -78,7 +104,7 @@ const PostList = ({ userId, groupId, newPost }) => {  // Added groupId as a prop
 
     const newComment = {
       post_id: postId,
-      user_id: userId,  
+      user_id: viewerId,  
       content: commentInputs[postId],
     };
 
@@ -101,42 +127,39 @@ const PostList = ({ userId, groupId, newPost }) => {  // Added groupId as a prop
 
   return (
     <div>
-      {posts.map((post) => (
-        <div key={`${post.id}-${post.created_at}`} style={postBoxStyle}>
-          <h3>{post.content}</h3>
-          {post.image && <img src={`http://localhost:8080/${post.image}`} alt="Post Image" style={imageStyle} />}
-          {post.gif && <img src={`http://localhost:8080/${post.gif}`} alt="Post GIF" style={imageStyle} />}
-          <p><strong>Privacy:</strong> {post.privacy}</p>
-          {post.comments &&
-            post.comments.map((comment, index) => (
-              <div key={index} className="comment-container" style={commentContainerStyle}>
-                <span className="comment-author">
-                  {comment.first_name} {comment.last_name}:
-                </span>
-                <span className="comment-text"> {comment.content}</span>
-              </div>
-            ))}
+        {posts.length > 0 ? (
+    posts.map((post) => {
+        console.log("Rendering post with ID:", post.id); // This will show you what IDs are being processed
+        return (
+            <div key={post.id} style={postBoxStyle}>
+                <h3>{post.content}</h3>
+                {post.image && <img src={`http://localhost:8080/${post.image}`} alt="Post Image" style={imageStyle} />}
+                {post.gif && <img src={`http://localhost:8080/${post.gif}`} alt="Post GIF" style={imageStyle} />}
+                <p><strong>Privacy:</strong> {post.privacy}</p>
+                {post.comments && post.comments.map((comment) => (
+                    <div key={comment.id} style={commentContainerStyle}>
+                        <span>{comment.first_name} {comment.last_name}: {comment.content}</span>
+                    </div>
+                ))}
+                <input
+                    type="text"
+                    value={commentInputs[post.id] || ''}
+                    onChange={(e) => handleCommentChange(e, post.id)}
+                    placeholder="Write a comment..."
+                    style={commentBoxStyle}
+                />
+                <button onClick={() => handleCommentSubmit(post.id)} style={submitButtonStyle}>
+                    Post Comment
+                </button>
+            </div>
+        );
+    })
+) : (
+    <p>No posts available.</p>
+)}
 
-          <div className="comment-input-box" style={commentContainerStyle}>
-            <input
-              type="text"
-              value={commentInputs[post.id] || ''}
-              onChange={(e) => handleCommentChange(e, post.id)}
-              placeholder="Write a comment..."
-              style={commentBoxStyle}
-            />
-            <button
-              onClick={() => handleCommentSubmit(post.id)}
-              style={submitButtonStyle}
-            >
-              Post
-            </button>
-          </div>
-        </div>
-      ))}
     </div>
-  );
+);
 };
 
 export default PostList;
-

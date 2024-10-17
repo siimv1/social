@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect } from 'react'; 
+
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -9,48 +10,49 @@ const Login = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
-    const [loggedInUserId, setLoggedInUserId] = useState(null); // Track userId from localStorage
     const router = useRouter();
 
-    // Use useEffect to access localStorage after the component mounts
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const userId = parseInt(localStorage.getItem('userId'));
-            setLoggedInUserId(userId);
+    const fetchSession = async () => {
+        try {
+          const response = await fetch('http://localhost:8080/session', {
+            method: 'GET',
+            credentials: 'include', // Include cookies in the request
+          });
+          if (!response.ok) {
+            const errorMessage = await response.text();
+            throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorMessage}`);
+          }
+          const data = await response.json();
+          // Use the session data as needed
+        } catch (error) {
+          console.error('Failed to fetch session:', error);
+          // Handle the error appropriately
         }
-    }, []);
+      };
+      
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
-        
         try {
             const response = await fetch('http://localhost:8080/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password }), 
+                body: JSON.stringify({ email, password }),
+                credentials: 'include', // Include credentials to send cookies
             });
-    
+
             if (response.ok) {
                 const data = await response.json();
-                console.log('Login response data:', data); 
-                
-                if (typeof window !== 'undefined') {
-                    // Access localStorage only in browser
-                    localStorage.setItem('userId', data.user_id);
-                    localStorage.setItem('token', data.token);
-                    
-                    const storedToken = localStorage.getItem('token');
-                    console.log('Stored token:', storedToken); 
-                }
-    
+                console.log('Login response data:', data);
+
                 setSuccess('Login successful!');
                 setTimeout(() => {
-                    router.push('/home'); 
-                }, 1000); 
+                    router.push('/home');
+                }, 1000);
             } else {
                 const errorData = await response.json();
                 setError(errorData.message || 'Login failed. Please try again.');

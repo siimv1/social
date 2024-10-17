@@ -10,17 +10,19 @@ import (
 )
 
 type User struct {
-	ID          int    `json:"id"`
-	Email       string `json:"email"`
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	DateOfBirth string `json:"date_of_birth"`
-	Avatar      string `json:"avatar,omitempty"`
-	Nickname    string `json:"nickname,omitempty"`
-	AboutMe     string `json:"about_me,omitempty"`
-	Password    string `json:"password"`
-	IsOnline    bool   `json:"is_online"`
-	IsPublic    bool   `json:"is_public"`
+	ID           int    `json:"id"`
+	Email        string `json:"email"`
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name"`
+	DateOfBirth  string `json:"date_of_birth"`
+	Avatar       string `json:"avatar,omitempty"`
+	Nickname     string `json:"nickname,omitempty"`
+	AboutMe      string `json:"about_me,omitempty"`
+	Password     string `json:"password"`
+	IsOnline     bool   `json:"is_online"`
+	IsPublic     bool   `json:"is_public"`
+	IsPrivate    bool   `json:"is_private"`
+	FollowStatus string `json:"follow_status"`
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {

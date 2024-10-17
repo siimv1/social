@@ -5,11 +5,9 @@ import (
 	"log"
 	"net/http"
 	"social-network/backend/pkg/db"
-	"strings"
-
-	"github.com/golang-jwt/jwt"
 )
 
+// GetUserProfile fetches the user profile by user ID
 func GetUserProfile(userID int) (*User, error) {
 	var user User
 	query := `SELECT id, email, first_name, last_name, date_of_birth, avatar, nickname, about_me, is_public FROM users WHERE id = ?`
@@ -22,7 +20,7 @@ func GetUserProfile(userID int) (*User, error) {
 		&user.Avatar,
 		&user.Nickname,
 		&user.AboutMe,
-		&user.IsPublic, // Include this field
+		&user.IsPublic,
 	)
 	if err != nil {
 		log.Printf("Error fetching user profile: %v", err)
@@ -33,30 +31,15 @@ func GetUserProfile(userID int) (*User, error) {
 
 // ProfileHandler handles requests to get the logged-in user's profile
 func ProfileHandler(w http.ResponseWriter, r *http.Request) {
-	// Extract the JWT token from the Authorization header
-	tokenStr := r.Header.Get("Authorization")
-	if tokenStr == "" {
+	// Get user ID from the context (set by the AuthMiddleware)
+	userID, ok := r.Context().Value(UserIDKey).(int)
+	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	// Remove "Bearer " prefix from the token
-	tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
-
-	// Parse the JWT token
-	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
-	})
-
-	// Check if the token is valid
-	if err != nil || !token.Valid {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	// Fetch user profile based on the userID from the claims
-	user, err := GetUserProfile(claims.UserID)
+	// Fetch the user profile using the user ID from the session
+	user, err := GetUserProfile(userID)
 	if err != nil {
 		log.Printf("Failed to get user profile: %v", err)
 		http.Error(w, "Profile not found", http.StatusNotFound)

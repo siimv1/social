@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -15,10 +14,9 @@ const UserProfile = () => {
     const router = useRouter();
     const params = useParams();
     const { id } = params;
+    const profileUserId = parseInt(id); // Profiili ID
     const [loggedInUserId, setLoggedInUserId] = useState(null);
-    const profileUserId = parseInt(id);
     const [isOwnProfile, setIsOwnProfile] = useState(false);
-
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -27,58 +25,72 @@ const UserProfile = () => {
     const [showChat, setShowChat] = useState(false);
     const [followStatus, setFollowStatus] = useState('not-following');
 
+    // Kontrolli kasutaja sessiooni ja määra, kas profiil kuulub sisse loginud kasutajale
     useEffect(() => {
-        const userId = localStorage.getItem('userId'); // Retrieve the logged-in user ID from localStorage
-        if (userId) {
-          setLoggedInUserId(parseInt(userId)); // Set the state with the actual user ID
-          setIsOwnProfile(parseInt(userId) === profileUserId);
-        } else {
-          router.push('/login'); // If user is not logged in, redirect to login
-        }
-    }, [profileUserId]);
+        const checkSession = async () => {
+            try {
+                const sessionResponse = await apiRequest('/session', 'GET');
+                const userId = sessionResponse.user_id; // Kontrolli sessiooni põhjal kasutaja ID-d
+                if (!userId) {
+                    throw new Error('No active session');
+                }
+                setLoggedInUserId(userId);
+                setIsOwnProfile(userId === profileUserId); // Kontrolli, kas profiil on oma
+            } catch (error) {
+                console.error('Error checking session:', error);
+                router.push('/login'); // Kui sessiooni pole, suuna login lehele
+            }
+        };
+
+        checkSession();
+    }, [profileUserId, router]);
 
     const handleSendMessage = () => {
         setShowChat(true);
     };
 
+    // Kasutaja välja logimine
     const handleLogout = async () => {
-        localStorage.removeItem('token');
+        await apiRequest('/logout', 'POST'); // Logi välja serveris sessioonipõhiselt
         router.push('/login');
     };
 
+    // Jälgimise oleku muutmine
     const handleFollowChange = (newStatus) => {
-        setFollowStatus(newStatus);
+        setFollowStatus(newStatus); // Uuenda follow status
         console.log('Follow status updated to:', newStatus);
     };
 
-    useEffect(() => {
-        if (!id) {
-            setError('User ID not found');
-            setLoading(false);
-            return;
-        }
+    // Lae profiili andmed ja kontrolli follow staatust
+useEffect(() => {
+    if (!id) {
+        setError('User ID not found');
+        setLoading(false);
+        return;
+    }
 
-        const fetchUserData = async () => {
-            try {
-                const data = await apiRequest(`/users/${id}`, 'GET');
-                if (!data) {
-                    throw new Error('No user data returned');
-                }
-                console.log('User data:', data);
-                setUserData(data);
-
-                // Set followStatus based on data.follow_status
-                setFollowStatus(data.follow_status || 'not-following');
-                console.log('Initial follow status:', data.follow_status);
-            } catch (error) {
-                setError(error.message);
-            } finally {
-                setLoading(false);
+    const fetchUserData = async () => {
+        try {
+            const data = await apiRequest(`/users/${id}`, 'GET');
+            if (!data) {
+                throw new Error('No user data returned');
             }
-        };
+            console.log('User data:', data);
+            setUserData(data);
 
-        fetchUserData();
-    }, [id]);
+            // Kontrolli ja seadista follow status vastavalt API andmetele
+            setFollowStatus(data.follow_status || 'not-following');
+            console.log('Initial follow status:', data.follow_status);
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchUserData();
+}, [id]);
+
 
     useEffect(() => {
         if (!id) return;
@@ -110,20 +122,26 @@ const UserProfile = () => {
         fetchFollowing();
     }, [id]);
 
+    // Follow nupu komponent, mis kasutab `isPublic`
     const FollowButton = ({ followedID, initialStatus, onFollowChange, isPublic }) => {
         const [loading, setLoading] = useState(false);
         const [followStatusState, setFollowStatusState] = useState(initialStatus);
-
+    
         useEffect(() => {
-            setFollowStatusState(initialStatus);
+            setFollowStatusState(initialStatus); // Seadista nupp vastavalt API vastusele
         }, [initialStatus]);
-
+    
         const handleFollow = async () => {
+            if (followStatusState === 'accepted' || followStatusState === 'pending') {
+                console.log('Already following or follow request is pending.');
+                return; // Väldi uuesti päringu tegemist, kui juba jälgitakse või päring on ootel
+            }
+    
             setLoading(true);
             try {
                 const response = await apiRequest('/followers', 'POST', { followed_id: followedID });
                 console.log('Follow API response:', response);
-        
+    
                 if (response.status === 'pending') {
                     setFollowStatusState('pending');
                     onFollowChange('pending');
@@ -139,7 +157,7 @@ const UserProfile = () => {
                 setLoading(false);
             }
         };
-
+    
         const handleUnfollow = async () => {
             setLoading(true);
             try {
@@ -154,11 +172,16 @@ const UserProfile = () => {
                 setLoading(false);
             }
         };
-
+    
+        useEffect(() => {
+            setFollowStatusState(initialStatus); // Värskenda nupu olek esialgse väärtuse järgi
+        }, [initialStatus]);
+        
+        // Kuvamine vastavalt follow state-ile
         if (followStatusState === 'pending') {
             return <button disabled>Request Pending</button>;
         }
-
+        
         if (followStatusState === 'accepted') {
             return (
                 <button className="unfollow-button" onClick={handleUnfollow} disabled={loading}>
@@ -166,13 +189,18 @@ const UserProfile = () => {
                 </button>
             );
         }
-
-        return (
-            <button className="follow-button" onClick={handleFollow} disabled={loading}>
-                {loading ? 'Following...' : 'Follow'}
-            </button>
-        );
-    };
+        
+        if (isPublic || followStatusState === 'not-following') {
+            return (
+                <button className="follow-button" onClick={handleFollow} disabled={loading}>
+                    {loading ? 'Following...' : 'Follow'}
+                </button>
+            );
+        }
+    
+        return null;
+    };    
+    
 
     if (loading) {
         return <div>Loading...</div>;
@@ -198,33 +226,30 @@ const UserProfile = () => {
                 </div>
                 <button className="logout-button" onClick={handleLogout}>Log Out</button>
             </div>
-
             <div className="home-sidebar-left">
-                <div className="profile-info">
-                    <h2>{userData.first_name} {userData.last_name}</h2>
-                    {(!userData.is_private || followStatus === 'accepted' || isOwnProfile) ? (
-                        <>
-                            {userData.nickname && <p>Nickname: {userData.nickname}</p>}
-                            {userData.email && <p>Email: {userData.email}</p>}
-                            {userData.date_of_birth && <p>Date of birth: {new Date(userData.date_of_birth).toLocaleDateString()}</p>}
-                            {userData.about_me && <p>About Me: {userData.about_me}</p>}
-                            {userData.avatar && <img src={userData.avatar} alt="User Avatar" className="avatar" />}
-                        </>
-                    ) : (
-                        <p>This profile is private.</p>
+            <div className="profile-info">
+    <h2>{userData.first_name} {userData.last_name}</h2>
+    {(userData.is_public || followStatus === 'accepted' || isOwnProfile) ? (
+        <>
+            {userData.nickname && <p>Nickname: {userData.nickname}</p>}
+            {userData.email && <p>Email: {userData.email}</p>}
+            {userData.date_of_birth && <p>Date of birth: {new Date(userData.date_of_birth).toLocaleDateString()}</p>}
+            {userData.about_me && <p>About Me: {userData.about_me}</p>}
+            {userData.avatar && <img src={userData.avatar} alt="User Avatar" className="avatar" />}
+        </>
+    ) : (
+        <p>This profile is private.</p>
+    )}
+    {!isOwnProfile && (
+        <FollowButton
+            followedID={profileUserId}
+            initialStatus={followStatus} // Kasuta `followStatus` API tagastatud väärtust
+            onFollowChange={handleFollowChange}
+            isPublic={userData.is_public}
+        />
+                    
                     )}
-
-                    {!isOwnProfile && (
-                        <FollowButton
-                            followedID={profileUserId}
-                            initialStatus={followStatus}
-                            onFollowChange={handleFollowChange}
-                            isPublic={userData.is_public}
-                        />
-                    )}
-
                     {isOwnProfile && <PendingFollowRequests profileUserId={profileUserId} />}
-
                     {!isOwnProfile && (
                         <>
                             <br />
@@ -236,55 +261,52 @@ const UserProfile = () => {
                         </>
                     )}
                 </div>
-
                 <button type="button" onClick={() => router.back()} className="back-button" style={{ marginTop: '10px' }}>
                     <FaArrowLeft style={{ marginRight: '5px' }} /> Back
                 </button>
             </div>
-
             <div className="home-sidebar-right">
-                <h2>Following</h2>
-                {userData && (!userData.is_private || followStatus === 'accepted' || isOwnProfile) ? (
-                    following.length > 0 ? (
-                        following.map(followed => (
-                            <p key={followed.id}>
-                                <Link href={`/profile/${followed.id}`}>
-                                    {followed.first_name} {followed.last_name}
-                                </Link>
-                            </p>
-                        ))
-                    ) : <p>Not following anyone yet.</p>
-                ) : (
-                    <p>Following is private.</p>
-                )}
-
-                <h2>Followers</h2>
-                {userData && (!userData.is_private || followStatus === 'accepted' || isOwnProfile) ? (
-                    followers.length > 0 ? (
-                        followers.map(follower => (
-                            <p key={follower.id}>
-                                <Link href={`/profile/${follower.id}`}>
-                                    {follower.first_name} {follower.last_name}
-                                </Link>
-                            </p>
-                        ))
-                    ) : <p>No followers yet.</p>
-                ) : (
-                    <p>Followers are private.</p>
-                )}
-            </div>
-
-            <div className="home-content">
-                <div className="user-posts">
-                    <h2>{isOwnProfile ? 'My Posts' : `${userData.first_name}'s Posts`}</h2>
-                    {(!userData.is_private || followStatus === 'accepted' || isOwnProfile) ? (
-                        <PostList userId={userData.id} />
-                    ) : (
-                        <p>Posts are private.</p>
-                    )}
-                </div>
-            </div>
-
+    <h2>Following</h2>
+    {userData && (userData.is_public || followStatus === 'accepted' || isOwnProfile) ? (
+        following.length > 0 ? (
+            following.map(followed => (
+                <p key={followed.id}>
+                    <Link href={`/profile/${followed.id}`}>
+                        {followed.first_name} {followed.last_name}
+                    </Link>
+                </p>
+            ))
+        ) : <p>Not following anyone yet.</p>
+    ) : (
+        <p>Following is private.</p>
+    )}
+    
+    <h2>Followers</h2>
+    {userData && (userData.is_public || followStatus === 'accepted' || isOwnProfile) ? (
+        followers.length > 0 ? (
+            followers.map(follower => (
+                <p key={follower.id}>
+                    <Link href={`/profile/${follower.id}`}>
+                        {follower.first_name} {follower.last_name}
+                    </Link>
+                </p>
+            ))
+        ) : <p>No followers yet.</p>
+    ) : (
+        <p>Followers are private.</p>
+    )}
+</div>
+           
+<div className="home-content">
+    <div className="user-posts">
+        <h2>{isOwnProfile ? 'My Posts' : `${userData.first_name}'s Posts`}</h2>
+        {(userData.is_public || followStatus === 'accepted' || isOwnProfile) ? (
+            <PostList userId={userData.id} />
+        ) : (
+            <p>Posts are private.</p>
+        )}
+    </div>
+</div>
             {showChat && (
                 <div className="chat-box">
                     <button className="close-button" onClick={() => setShowChat(false)}>X</button>

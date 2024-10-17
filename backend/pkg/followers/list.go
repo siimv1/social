@@ -62,6 +62,12 @@ func GetFollowersHandler(w http.ResponseWriter, r *http.Request) {
 		followers = append(followers, follower)
 	}
 
+	if len(followers) == 0 {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "No followers found", "followers": []Follower{}})
+		return
+	}
+
 	// Return the followers in JSON format
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"followers": followers})

@@ -9,14 +9,21 @@ const PendingFollowRequests = ({ profileUserId }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [loggedInUserId, setLoggedInUserId] = useState(null); // State to store userId
+    const [loggedInUserId, setLoggedInUserId] = useState(null);
 
-    // UseEffect to safely access localStorage on the client side
+    // Fetch the session to get the logged-in user ID
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const userId = parseInt(localStorage.getItem('userId'));
-            setLoggedInUserId(userId);
-        }
+        const fetchSession = async () => {
+            try {
+                const sessionResponse = await apiRequest('/session', 'GET');
+                const userId = sessionResponse.user_id;
+                setLoggedInUserId(userId);
+            } catch (error) {
+                console.error('Failed to fetch session:', error);
+            }
+        };
+
+        fetchSession();
     }, []);
 
     // Check if the profile being viewed belongs to the logged-in user
@@ -28,7 +35,6 @@ const PendingFollowRequests = ({ profileUserId }) => {
             fetchPendingRequests();
         }
     }, [isOwnProfile]);
-    
     const fetchPendingRequests = async () => {
         try {
             const data = await apiRequest('/followers/requests', 'GET');

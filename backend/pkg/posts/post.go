@@ -13,7 +13,7 @@ import (
 type Post struct {
     ID        int       `json:"id"`
     UserID    int       `json:"user_id"`
-    GroupID   int       `json:"group_id"`   
+    GroupID   *int      `json:"group_id,omitempty"`   // Changed to *int to handle NULL
     Content   string    `json:"content"`
     Image     string    `json:"image"`
     GIF       string    `json:"gif"`
@@ -26,7 +26,7 @@ type Comment struct {
     ID        int       `json:"id"`
     PostID    int       `json:"post_id"`
     UserID    int       `json:"user_id"`
-    GroupID   int       `json:"group_id,omitempty"`  
+    GroupID   *int      `json:"group_id,omitempty"`   // Changed to *int to handle NULL
     Content   string    `json:"content"`
     Image     string    `json:"image"`
     GIF       string    `json:"gif"`
@@ -38,12 +38,14 @@ type Comment struct {
 func CreatePost(w http.ResponseWriter, r *http.Request) {
     var post Post
 
+    // Parse multipart form data
     err := r.ParseMultipartForm(10 << 20)
     if err != nil {
         http.Error(w, "Unable to parse form data", http.StatusBadRequest)
         return
     }
 
+    // Extract user_id from form data and convert to int
     userIDStr := r.FormValue("user_id")
     post.UserID, err = strconv.Atoi(userIDStr)
     if err != nil {
@@ -51,22 +53,26 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // Handle group_id: If provided, convert to integer, else set to nil (no group)
     groupIDStr := r.FormValue("group_id")
     if groupIDStr != "" {
-        post.GroupID, err = strconv.Atoi(groupIDStr)
+        groupID, err := strconv.Atoi(groupIDStr)
         if err != nil {
             http.Error(w, "Invalid group ID", http.StatusBadRequest)
             return
         }
+        post.GroupID = &groupID // Set the group_id for the post
     } else {
-        post.GroupID = 0  
+        post.GroupID = nil  // Set to nil when not part of any group
     }
 
+    // Extract other fields from form data
     post.Content = r.FormValue("content")
     post.Privacy = r.FormValue("privacy")
-    post.Image = handleImageUpload(r)  
-    post.GIF = handleGIFUpload(r)
+    post.Image = handleImageUpload(r)  // Custom function to handle image uploads
+    post.GIF = handleGIFUpload(r)      // Custom function to handle GIF uploads
 
+    // Insert the post into the database
     query := `INSERT INTO posts (user_id, group_id, content, image, gif, privacy) VALUES (?, ?, ?, ?, ?, ?)`
     _, err = db.DB.Exec(query, post.UserID, post.GroupID, post.Content, post.Image, post.GIF, post.Privacy)
     if err != nil {
@@ -89,11 +95,14 @@ func CreateComment(w http.ResponseWriter, r *http.Request) {
 
     groupIDStr := r.URL.Query().Get("group_id")
     if groupIDStr != "" {
-        comment.GroupID, err = strconv.Atoi(groupIDStr)
+        groupID, err := strconv.Atoi(groupIDStr)
         if err != nil {
             http.Error(w, "Invalid group ID", http.StatusBadRequest)
             return
         }
+        comment.GroupID = &groupID
+    } else {
+        comment.GroupID = nil
     }
 
     comment.Image = handleImageUpload(r)
@@ -123,55 +132,53 @@ func CreateComment(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusCreated)
     json.NewEncoder(w).Encode(newComment)
 }
-
 func GetPosts(w http.ResponseWriter, r *http.Request) {
     groupIDStr := r.URL.Query().Get("group_id")
-    userIDStr := r.URL.Query().Get("user_id")  
+    userIDStr := r.URL.Query().Get("user_id")
     var rows *sql.Rows
     var err error
 
-    // Fetch posts by group ID
+    // Fetch posts for a specific group if group_id is present
     if groupIDStr != "" {
-        groupID, err := strconv.Atoi(groupIDStr)
-        if err != nil {
+        groupID, convErr := strconv.Atoi(groupIDStr)
+        if convErr != nil {
             http.Error(w, "Invalid group ID", http.StatusBadRequest)
             return
         }
+
+        // Fetch posts that are only for this group
         rows, err = db.DB.Query(`
-            SELECT id, user_id, COALESCE(group_id, 0), content, image, gif, privacy, created_at 
+            SELECT id, user_id, group_id, content, image, gif, privacy, created_at 
             FROM posts 
             WHERE group_id = ?`, groupID)
         if err != nil {
             http.Error(w, "Error fetching group posts", http.StatusInternalServerError)
             return
         }
-    // Fetch posts by user ID
+
+    // Fetch only the logged-in user's posts for the timeline
     } else if userIDStr != "" {
-        userID, err := strconv.Atoi(userIDStr)
-        if err != nil {
+        userID, convErr := strconv.Atoi(userIDStr)
+        if convErr != nil {
             http.Error(w, "Invalid user ID", http.StatusBadRequest)
             return
         }
+
+        // Fetch only the logged-in user's posts
         rows, err = db.DB.Query(`
-            SELECT id, user_id, COALESCE(group_id, 0), content, image, gif, privacy, created_at 
+            SELECT id, user_id, group_id, content, image, gif, privacy, created_at 
             FROM posts 
-            WHERE (user_id = ? OR privacy = 'public')`, userID)
+            WHERE user_id = ? AND group_id IS NULL`, userID)  // Ensure no group posts are fetched
         if err != nil {
             http.Error(w, "Error fetching user posts", http.StatusInternalServerError)
             return
         }
     } else {
-        rows, err = db.DB.Query(`
-            SELECT id, user_id, COALESCE(group_id, 0), content, image, gif, privacy, created_at 
-            FROM posts 
-            WHERE privacy = 'public'`)
-        if err != nil {
-            http.Error(w, "Error fetching public posts", http.StatusInternalServerError)
-            return
-        }
+        http.Error(w, "User ID or Group ID must be provided", http.StatusBadRequest)
+        return
     }
 
-    defer rows.Close()  
+    defer rows.Close()
 
     var posts []Post
     for rows.Next() {
@@ -183,8 +190,9 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
             return
         }
 
+        // Fetch comments for each post
         commentRows, commentErr := db.DB.Query(`
-            SELECT c.id, c.post_id, c.user_id, COALESCE(c.group_id, 0), c.content, c.image, c.gif, c.created_at, u.first_name, u.last_name
+            SELECT c.id, c.post_id, c.user_id, c.group_id, c.content, c.image, c.gif, c.created_at, u.first_name, u.last_name
             FROM comments c
             JOIN users u ON c.user_id = u.id
             WHERE c.post_id = ?`, post.ID)
@@ -192,7 +200,7 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
             http.Error(w, "Error fetching comments", http.StatusInternalServerError)
             return
         }
-        defer commentRows.Close()  
+        defer commentRows.Close()
 
         var comments []Comment
         for commentRows.Next() {

@@ -3,10 +3,12 @@ package groups
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"social-network/backend/pkg/auth"
 	"social-network/backend/pkg/db"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -19,7 +21,6 @@ type Group struct {
 	CreatorID   int       `json:"creator_id"`
 	CreatedAt   time.Time `json:"created_at"`
 }
-
 type Invite struct {
 	ID      int    `json:"id"`
 	GroupID int    `json:"group_id"`
@@ -28,30 +29,19 @@ type Invite struct {
 }
 
 func CreateGroup(w http.ResponseWriter, r *http.Request) {
-
-	tokenStr := r.Header.Get("Authorization")
-	if tokenStr == "" {
-		http.Error(w, "Authorization token is required", http.StatusUnauthorized)
+	session, _ := auth.Store.Get(r, "session-name")
+	userID, ok := session.Values["user_id"].(int)
+	if !ok {
+		http.Error(w, "User not logged in", http.StatusUnauthorized)
 		return
 	}
-
-	userID, err := auth.ValidateToken(tokenStr)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
 	log.Printf("Creator ID: %d", userID)
-
 	var group Group
-
 	if err := json.NewDecoder(r.Body).Decode(&group); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	group.CreatorID = userID
-
 	query := `INSERT INTO groups (title, description, creator_id) VALUES (?, ?, ?)`
 	result, err := db.DB.Exec(query, group.Title, group.Description, group.CreatorID)
 	if err != nil {
@@ -59,21 +49,17 @@ func CreateGroup(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	id, err := result.LastInsertId()
 	if err != nil {
 		log.Printf("Error retrieving last insert ID: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	group.ID = int(id)
 	group.CreatedAt = time.Now()
-
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(group)
 }
-
 func GetGroups(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.DB.Query("SELECT id, title, description, creator_id, created_at FROM groups")
 	if err != nil {
@@ -81,7 +67,6 @@ func GetGroups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer rows.Close()
-
 	var groups []Group
 	for rows.Next() {
 		var group Group
@@ -91,15 +76,12 @@ func GetGroups(w http.ResponseWriter, r *http.Request) {
 		}
 		groups = append(groups, group)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(groups)
 }
-
 func GetGroupByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-
 	var group Group
 	err := db.DB.QueryRow("SELECT id, title, description, creator_id, created_at FROM groups WHERE id = ?", id).Scan(&group.ID, &group.Title, &group.Description, &group.CreatorID, &group.CreatedAt)
 	if err != nil {
@@ -110,11 +92,9 @@ func GetGroupByID(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(group)
 }
-
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.DB.Query("SELECT id, email FROM users")
 	if err != nil {
@@ -122,12 +102,10 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer rows.Close()
-
 	var users []struct {
 		ID    int    `json:"id"`
 		Email string `json:"email"`
 	}
-
 	for rows.Next() {
 		var user struct {
 			ID    int    `json:"id"`
@@ -139,22 +117,14 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		users = append(users, user)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
 }
-
 func InviteUser(w http.ResponseWriter, r *http.Request) {
-
-	tokenStr := r.Header.Get("Authorization")
-	if tokenStr == "" {
-		http.Error(w, "Authorization token is required", http.StatusUnauthorized)
-		return
-	}
-
-	userID, err := auth.ValidateToken(tokenStr)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+	session, _ := auth.Store.Get(r, "session-name")
+	userID, ok := session.Values["user_id"].(int)
+	if !ok {
+		http.Error(w, "User not logged in", http.StatusUnauthorized)
 		return
 	}
 
@@ -162,7 +132,7 @@ func InviteUser(w http.ResponseWriter, r *http.Request) {
 	groupID := vars["id"]
 
 	var creatorID int
-	err = db.DB.QueryRow("SELECT creator_id FROM groups WHERE id = ?", groupID).Scan(&creatorID)
+	err := db.DB.QueryRow("SELECT creator_id FROM groups WHERE id = ?", groupID).Scan(&creatorID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Group not found", http.StatusNotFound)
@@ -196,27 +166,40 @@ func InviteUser(w http.ResponseWriter, r *http.Request) {
 func AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	inviteID := vars["id"]
-
 	query := `UPDATE invites SET status = 'accepted' WHERE id = ?`
 	_, err := db.DB.Exec(query, inviteID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 }
 
 func RequestJoinGroup(w http.ResponseWriter, r *http.Request) {
-	tokenStr := r.Header.Get("Authorization")
-	if tokenStr == "" {
-		http.Error(w, "Authorization token is required", http.StatusUnauthorized)
+	session, _ := auth.Store.Get(r, "session-name")
+	userIDValue, exists := session.Values["user_id"]
+	if !exists {
+		http.Error(w, "Kasutaja ei ole sisse logitud", http.StatusUnauthorized)
 		return
 	}
 
-	userID, err := auth.ValidateToken(tokenStr)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+	var userID int
+	switch v := userIDValue.(type) {
+	case int:
+		userID = v
+	case int64:
+		userID = int(v)
+	case float64:
+		userID = int(v)
+	case string:
+		var err error
+		userID, err = strconv.Atoi(v)
+		if err != nil {
+			http.Error(w, "Vigane kasutaja ID sessioonis", http.StatusUnauthorized)
+			return
+		}
+	default:
+		http.Error(w, "Kasutaja ei ole sisse logitud", http.StatusUnauthorized)
 		return
 	}
 
@@ -224,70 +207,72 @@ func RequestJoinGroup(w http.ResponseWriter, r *http.Request) {
 	groupID := vars["id"]
 
 	query := `INSERT INTO join_requests (group_id, user_id, status) VALUES (?, ?, 'pending')`
-	_, err = db.DB.Exec(query, groupID, userID)
+	_, err := db.DB.Exec(query, groupID, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(fmt.Sprintf("Liitumisavaldus saadetud gruppi %s", groupID)))
 }
 
 func AcceptJoinRequest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	requestID := vars["id"]
+	groupID := vars["id"]
 
-	var groupID, userID int
-	err := db.DB.QueryRow("SELECT group_id, user_id FROM join_requests WHERE id = ?", requestID).Scan(&groupID, &userID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	var requestData struct {
+		UserID int `json:"userId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	_, err = db.DB.Exec("INSERT INTO group_members (group_id, user_id) VALUES (?, ?)", groupID, userID)
+	_, err := db.DB.Exec("UPDATE join_requests SET status = 'accepted' WHERE group_id = ? AND user_id = ?", groupID, requestData.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	_, err = db.DB.Exec("UPDATE join_requests SET status = 'accepted' WHERE id = ?", requestID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func RejectJoinRequest(w http.ResponseWriter, r *http.Request) {
+func DenyJoinRequest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	requestID := vars["id"]
+	groupID := vars["id"]
 
-	query := `UPDATE join_requests SET status = 'rejected' WHERE id = ?`
-	_, err := db.DB.Exec(query, requestID)
+	var requestData struct {
+		UserID int `json:"userId"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	_, err := db.DB.Exec("UPDATE join_requests SET status = 'denied' WHERE group_id = ? AND user_id = ?", groupID, requestData.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Denied group join request for group ID " + groupID))
 }
 
 func GetJoinRequests(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	groupID := vars["id"]
-
 	rows, err := db.DB.Query("SELECT user_id FROM join_requests WHERE group_id = ? AND status = 'pending'", groupID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
-
 	var requests []struct {
 		UserID int `json:"user_id"`
 	}
-
 	for rows.Next() {
 		var request struct {
 			UserID int `json:"user_id"`
@@ -298,57 +283,30 @@ func GetJoinRequests(w http.ResponseWriter, r *http.Request) {
 		}
 		requests = append(requests, request)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(requests)
 }
 
-// func GetJoinStatus(w http.ResponseWriter, r *http.Request) {
-// 	vars := mux.Vars(r)
-// 	groupID := vars["id"]
-
-// 	tokenStr := r.Header.Get("Authorization")
-// 	if tokenStr == "" {
-// 		http.Error(w, "Authorization token is required", http.StatusUnauthorized)
-// 		return
-// 	}
-
-// 	userID, err := auth.ValidateToken(tokenStr)
-// 	if err != nil {
-// 		http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
-// 		return
-// 	}
-
-// 	var isPending, isMember bool
-
-// 	err = db.DB.QueryRow("SELECT COUNT(*) > 0 FROM join_requests WHERE group_id = ? AND user_id = ? AND status = 'pending'", groupID, userID).Scan(&isPending)
-// 	if err != nil {
-// 		log.Printf("Error checking pending join requests: %v", err)
-// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	err = db.DB.QueryRow("SELECT COUNT(*) > 0 FROM group_members WHERE group_id = ? AND user_id = ?", groupID, userID).Scan(&isMember)
-// 	if err != nil {
-// 		log.Printf("Error checking if user is member: %v", err)
-// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	json.NewEncoder(w).Encode(map[string]bool{
-// 		"isPending": isPending,
-// 		"isMember":  isMember,
-// 	})
-// }
-
 func JoinGroup(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	groupID := vars["id"]
-	tokenStr := r.Header.Get("Authorization")
 
-	userID, err := auth.ValidateToken(tokenStr)
+	session, _ := auth.Store.Get(r, "session-name")
+	userID, ok := session.Values["user_id"].(int)
+	if !ok {
+		http.Error(w, "User not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	var creatorID int
+	err := db.DB.QueryRow("SELECT creator_id FROM groups WHERE id = ?", groupID).Scan(&creatorID)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	if userID == creatorID {
+		http.Error(w, "Group creator cannot send join request", http.StatusBadRequest)
 		return
 	}
 
@@ -360,16 +318,54 @@ func JoinGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if existingRequestCount > 0 {
-		http.Error(w, "Join request already sent", http.StatusBadRequest)
+
+		response := map[string]bool{
+			"requestPending": true,
+		}
+		jsonResponse, _ := json.Marshal(response)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonResponse)
 		return
 	}
 
-	// Salvestame uue liitumisavalduse
 	_, err = db.DB.Exec("INSERT INTO join_requests (group_id, user_id, status) VALUES (?, ?, 'pending')", groupID, userID)
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 
+	response := map[string]bool{
+		"requestPending": true,
+	}
+	jsonResponse, _ := json.Marshal(response)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	w.Write(jsonResponse)
+}
+
+func JoinStatus(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	groupID := vars["id"]
+
+	session, _ := auth.Store.Get(r, "session-name")
+	userID, ok := session.Values["user_id"].(int)
+	if !ok {
+		http.Error(w, "User not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	var requestPending bool
+	err := db.DB.QueryRow("SELECT COUNT(*) > 0 FROM join_requests WHERE group_id = ? AND user_id = ? AND status = 'pending'", groupID, userID).Scan(&requestPending)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]bool{
+		"requestPending": requestPending,
+	}
+	jsonResponse, _ := json.Marshal(response)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResponse)
 }

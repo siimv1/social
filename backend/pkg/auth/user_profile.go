@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// UserProfile contains user profile details
 type UserProfile struct {
 	ID          int    `json:"id"`
 	FirstName   string `json:"first_name"`
@@ -22,30 +23,32 @@ type UserProfile struct {
 	IsFollowing bool   `json:"is_following"`
 }
 
+// UserProfileHandler handles requests for viewing user profiles
+// Fetch user profile data, including follow status
 func UserProfileHandler(w http.ResponseWriter, r *http.Request) {
-	// Extract the user ID from the URL
-	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) < 3 {
-		http.Error(w, "Invalid URL path", http.StatusBadRequest)
+	// Get logged-in user's ID from the session
+	session, err := Store.Get(r, "session-name")
+	if err != nil {
+		log.Printf("Error retrieving session: %v", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	userIDStr := pathParts[len(pathParts)-1]
-	profileID, err := strconv.Atoi(userIDStr)
+	loggedInUserID, ok := session.Values["user_id"].(int)
+	if !ok {
+		log.Println("No user_id found in session")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Extract the profile ID from the URL path
+	profileID, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/users/"))
 	if err != nil {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 
-	// Get the current logged-in user ID from the token
-	tokenString := r.Header.Get("Authorization")
-	tokenString = strings.TrimPrefix(tokenString, "Bearer ")
-	currentUserID, err := ValidateToken(tokenString)
-	if err != nil {
-		currentUserID = 0 // Not logged in
-	}
-
-	// Fetch user profile data
+	// Fetch user profile
 	var user User
 	err = db.DB.QueryRow("SELECT id, first_name, last_name, nickname, email, date_of_birth, about_me, avatar, is_public FROM users WHERE id = ?", profileID).
 		Scan(&user.ID, &user.FirstName, &user.LastName, &user.Nickname, &user.Email, &user.DateOfBirth, &user.AboutMe, &user.Avatar, &user.IsPublic)
@@ -55,16 +58,18 @@ func UserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine follow status
-	var followStatus string = "not-following"
-	if currentUserID != 0 && currentUserID != profileID {
-		err = db.DB.QueryRow("SELECT status FROM followers WHERE follower_id = ? AND followed_id = ?", currentUserID, profileID).Scan(&followStatus)
-		if err != nil {
-			followStatus = "not-following"
-		}
+	// Check if the logged-in user is following the profile
+	var followStatus string
+	err = db.DB.QueryRow("SELECT status FROM followers WHERE follower_id = ? AND followed_id = ?", loggedInUserID, profileID).Scan(&followStatus)
+	if err == sql.ErrNoRows {
+		followStatus = "not-following"
+	} else if err != nil {
+		log.Printf("Error checking follow status: %v", err)
+		http.Error(w, "Failed to check follow status", http.StatusInternalServerError)
+		return
 	}
 
-	// Prepare the response data
+	// Include follow_status in the response
 	response := map[string]interface{}{
 		"id":            user.ID,
 		"first_name":    user.FirstName,
@@ -74,15 +79,15 @@ func UserProfileHandler(w http.ResponseWriter, r *http.Request) {
 		"date_of_birth": user.DateOfBirth,
 		"about_me":      user.AboutMe,
 		"avatar":        user.Avatar,
-		"is_public":     user.IsPublic, // It's already a boolean, no need to compare with 1 or 0
-		"follow_status": followStatus,
-		"is_private":    !user.IsPublic, // Simply negate the boolean to check if the profile is private
+		"is_public":     user.IsPublic,
+		"follow_status": followStatus, // Tagasta follow status
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
+// IsFollower checks if the user is following the given profile
 func IsFollower(followerID, followedID int) (bool, error) {
 	var status string
 	err := db.DB.QueryRow("SELECT status FROM followers WHERE follower_id = ? AND followed_id = ?", followerID, followedID).Scan(&status)
@@ -94,6 +99,60 @@ func IsFollower(followerID, followedID int) (bool, error) {
 	return status == "accepted", nil
 }
 
+// IsFollowing is an alias for IsFollower, kept for semantic clarity
 func IsFollowing(userID, followedID int) (bool, error) {
 	return IsFollower(userID, followedID)
+}
+
+// SomeProtectedHandler is an example of a protected endpoint that returns user-specific data
+func SomeProtectedHandler(w http.ResponseWriter, r *http.Request) {
+	// Retrieve the user ID from the context
+	userID, ok := r.Context().Value(UserIDKey).(int)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Use the userID to fetch user-specific data from the database
+	userData, err := fetchUserData(userID)
+	if err != nil {
+		log.Printf("Failed to fetch user data for user ID %d: %v", userID, err)
+		http.Error(w, "Failed to fetch user data", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the user data as a JSON response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(userData)
+}
+
+// fetchUserData retrieves user-specific data from the database
+func fetchUserData(userID int) (UserData, error) {
+	var userData UserData
+	err := db.DB.QueryRow(`
+        SELECT id, first_name, last_name, email, date_of_birth, about_me
+        FROM users
+        WHERE id = ?
+    `, userID).Scan(
+		&userData.ID,
+		&userData.FirstName,
+		&userData.LastName,
+		&userData.Email,
+		&userData.DateOfBirth,
+		&userData.AboutMe,
+	)
+	if err != nil {
+		return UserData{}, err
+	}
+	return userData, nil
+}
+
+// UserData represents the user's data structure
+type UserData struct {
+	ID          int    `json:"id"`
+	FirstName   string `json:"first_name"`
+	LastName    string `json:"last_name"`
+	Email       string `json:"email"`
+	DateOfBirth string `json:"date_of_birth"`
+	AboutMe     string `json:"about_me"`
 }

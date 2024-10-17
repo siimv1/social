@@ -23,20 +23,17 @@ const Login = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password }), 
+                credentials: 'include',  // Include credentials to send cookies
             });
-    
+        
             if (response.ok) {
                 const data = await response.json();
-                console.log('Login data:', data); // Kontrollime, kas token saadeti vastuses
-    
-                // Salvestame tokeni localStorage'sse
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('userId', data.user_id); 
-    
-                // Kontrollime, kas token on localStorage's
-                const storedToken = localStorage.getItem('token');
-                console.log('Stored token:', storedToken); // Peaks kuvama tokeni
+                console.log('Login response data:', data); 
+                
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('userId', data.user_id); // Save userId if necessary
+                }
     
                 setSuccess('Login successful!');
                 setTimeout(() => {
@@ -46,14 +43,12 @@ const Login = () => {
                 const errorData = await response.json();
                 setError(errorData.message || 'Login failed. Please try again.');
             }
-        } catch (err) {
+        } catch (parseError) {
             setError('Login failed. Please try again.');
         } finally {
             setLoading(false);
         }
     };
-       
-    
 
     return (
         <div className="container">
