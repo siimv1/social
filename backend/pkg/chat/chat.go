@@ -15,18 +15,21 @@ import (
 // Represents a WebSocket client
 type Client struct {
 	UserID int
+	GroupID int
 	Conn   *websocket.Conn
 	Send   chan []byte
 }
 
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+    ReadBufferSize:  2048, 
+    WriteBufferSize: 2048,  
+    CheckOrigin: func(r *http.Request) bool {
+        return true
+    },
 }
+
 var userClients = make(map[int]*Client)
+var groupClients = make(map[int]map[int]*Client)  
 
 func HandleConnections(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -166,4 +169,92 @@ func (c *Client) WritePump() {
 	}
 	close(c.Send)
 	delete(userClients, c.UserID)
+}
+func HandleGroupConnections(w http.ResponseWriter, r *http.Request) {
+    ws, err := upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        log.Printf("Failed to upgrade to WebSocket: %v", err)
+        return
+    }
+
+    groupIDStr := r.URL.Query().Get("group_id")
+    userIDStr := r.URL.Query().Get("user_id")
+
+    if groupIDStr == "" || userIDStr == "" {
+        log.Println("Missing group ID or user ID in WebSocket request")
+        return
+    }
+
+    groupID, _ := strconv.Atoi(groupIDStr)
+    userID, _ := strconv.Atoi(userIDStr)
+
+    log.Printf("User %d connected to group %d", userID, groupID)
+
+    client := &Client{
+        UserID:  userID,
+        GroupID: groupID,
+        Conn:    ws,
+        Send:    make(chan []byte),
+    }
+
+    if groupClients[groupID] == nil {
+        groupClients[groupID] = make(map[int]*Client)
+    }
+    groupClients[groupID][userID] = client
+
+    // Only defer cleanup when connection is closed, not right after upgrade
+    go handleGroupMessages(client, groupID)
+
+    log.Printf("Successfully upgraded connection for user %d in group %d", userID, groupID)
+}
+
+
+
+func handleGroupMessages(client *Client, groupID int) {
+    defer func() {
+        log.Printf("Closing connection for user %d in group %d", client.UserID, groupID)
+        client.Conn.Close()
+        delete(groupClients[groupID], client.UserID)
+    }()
+
+    for {
+        _, msg, err := client.Conn.ReadMessage()
+        if err != nil {
+            if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+                log.Printf("Error reading message: %v", err)
+            } else {
+                log.Printf("WebSocket closed normally for user %d in group %d", client.UserID, groupID)
+            }
+            break // Exit the loop on error or closed connection
+        }
+
+        // Log incoming message
+        log.Printf("Received message from user %d in group %d: %s", client.UserID, groupID, string(msg))
+
+        saveGroupMessage(client.GroupID, client.UserID, string(msg))
+
+        // Broadcast the message to all users in the group
+        for _, c := range groupClients[groupID] {
+            select {
+            case c.Send <- msg:
+                log.Printf("Sent message to user %d in group %d", c.UserID, groupID)
+            default:
+                log.Printf("Client %d is not available to receive messages", c.UserID)
+            }
+        }
+    }
+}
+
+
+// Save a group message to the database
+func saveGroupMessage(groupID, userID int, content string) {
+	stmt, err := db.DB.Prepare("INSERT INTO group_messages (group_id, user_id, content) VALUES (?, ?, ?)")
+	if err != nil {
+		log.Printf("Failed to prepare statement: %v", err)
+		return
+	}
+	_, err = stmt.Exec(groupID, userID, content)
+	if err != nil {
+		log.Printf("Failed to save group message: %v", err)
+	}
 }

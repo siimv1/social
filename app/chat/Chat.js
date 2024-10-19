@@ -1,31 +1,81 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Picker from 'emoji-picker-react';  // Import the emoji picker component
 
-const Chat = ({ senderId, recipientId }) => {
+const Chat = ({ senderId, recipientId, groupId, isGroupChat }) => {
   const [messages, setMessages] = useState([]); // Store chat messages
   const [input, setInput] = useState(''); // Manage message input
   const [showPicker, setShowPicker] = useState(false); // Toggle the emoji picker
   const ws = useRef(null); // Store WebSocket instance
-  
+
+  const reconnectWebSocket = () => {
+    setTimeout(() => {
+      if (ws.current && ws.current.readyState !== WebSocket.OPEN) {
+        if (isGroupChat) {
+          const wsUrl = `ws://localhost:8080/groupchat?user_id=${senderId}&group_id=${groupId}`;
+          console.log("Reconnecting WebSocket Group URL:", wsUrl);
+          ws.current = new WebSocket(wsUrl);
+        } else {
+          const wsUrl = `ws://localhost:8080/ws?sender_id=${senderId}&recipient_id=${recipientId}`;
+          console.log("Reconnecting WebSocket Private URL:", wsUrl);
+          ws.current = new WebSocket(wsUrl);
+        }
+      }
+    }, 3000); // Reconnect after 3 seconds
+};
+
   // Establish WebSocket connection
   useEffect(() => {
-    if (senderId && recipientId) {
-      const wsUrl = `ws://localhost:8080/ws?sender_id=${senderId}&recipient_id=${recipientId}`;
-      console.log("WebSocket URL:", wsUrl);
+    if (isGroupChat && senderId && groupId) {
+      const wsUrl = `ws://localhost:8080/groupchat?user_id=${senderId}&group_id=${groupId}`;
+      console.log("WebSocket Group URL:", wsUrl);
 
       ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
-        console.log('WebSocket connection established.');
+        console.log('WebSocket group chat connection established.');
       };
 
       ws.current.onmessage = (event) => {
         try {
           const parsedData = JSON.parse(event.data); // Parse the message if JSON
-          console.log("Received message:", parsedData);
+          console.log("Received group message:", parsedData);
           setMessages((prevMessages) => [...prevMessages, parsedData]);
         } catch (e) {
-          console.error("Failed to parse WebSocket message:", event.data);
+          console.error("Failed to parse WebSocket group message:", event.data, e);
+        }
+      };
+
+      ws.current.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      ws.current.onclose = (event) => {
+        if (event.wasClean) {
+          console.log(`WebSocket closed cleanly, code=${event.code}, reason=${event.reason}`);
+        } else {
+          console.error(`WebSocket closed unexpectedly: code=${event.code}, reason=${event.reason}`);
+          reconnectWebSocket();  // Ensure reconnection if it's unexpected
+        }
+      };
+      
+      
+    } else if (senderId && recipientId) {
+      const wsUrl = `ws://localhost:8080/ws?sender_id=${senderId}&recipient_id=${recipientId}`;
+      console.log("WebSocket Private URL:", wsUrl);
+
+      ws.current = new WebSocket(wsUrl);
+
+      ws.current.onopen = () => {
+        console.log('WebSocket private chat connection established.');
+      };
+
+      ws.current.onmessage = (event) => {
+        try {
+          const parsedData = JSON.parse(event.data); // Parse the message if JSON
+          console.log("Received private message:", parsedData);
+          setMessages((prevMessages) => [...prevMessages, parsedData]);
+        } catch (e) {
+          console.error("Failed to parse WebSocket private message:", event.data, e);
         }
       };
 
@@ -34,7 +84,8 @@ const Chat = ({ senderId, recipientId }) => {
       };
 
       ws.current.onclose = () => {
-        console.log("WebSocket connection closed.");
+        console.log("WebSocket private chat connection closed.");
+        reconnectWebSocket(); // Attempt to reconnect
       };
     }
 
@@ -44,22 +95,26 @@ const Chat = ({ senderId, recipientId }) => {
         ws.current.close(); // Ensure WebSocket is closed gracefully
       }
     };
-  }, [senderId, recipientId]);
+  }, [senderId, recipientId, groupId, isGroupChat]);
 
   // Handle sending messages
   const sendMessage = () => {
     if (input.trim() && ws.current && ws.current.readyState === WebSocket.OPEN) {
-      const message = {
-        sender_id: senderId,
+      const message = isGroupChat ? {
+        user_id: senderId,  // For group chat
+        content: input,     // The message content
+      } : {
+        sender_id: senderId, // For private chat
         recipient_id: Number(recipientId),
-        content: input,  // input now includes emojis if added
+        content: input,     // input now includes emojis if added
       };
+
       console.log("Sending message:", message);
 
       // Immediately update the UI to show the message
       setMessages((prevMessages) => [...prevMessages, message]);
 
-      // Send the message to the WebSocket server
+      // Send the message to the WebSocket server as JSON
       ws.current.send(JSON.stringify(message));
       setInput(''); // Clear the input after sending the message
     }
@@ -71,16 +126,25 @@ const Chat = ({ senderId, recipientId }) => {
     setShowPicker(false);  // Close the emoji picker after selecting an emoji
   };
 
+  // Send message on Enter key
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  };
+
   return (
     <div style={styles.chatContainer}>
-      <h2 style={styles.chatHeader}>Chat with User {recipientId}</h2>
+      <h2 style={styles.chatHeader}>
+        {isGroupChat ? `Group Chat ${groupId}` : `Chat with User ${recipientId}`}
+      </h2>
       <div style={styles.chatMessages}>
         {/* Display messages */}
         {messages.map((msg, index) => (
           <div key={index} style={styles.message}>
-            {msg.sender_id === senderId
+            {msg.user_id === senderId || msg.sender_id === senderId
               ? `You: ${msg.content}` // Show "You" for the sender
-              : `User ${msg.sender_id}: ${msg.content}`} {/* Show sender's ID dynamically */}
+              : `User ${msg.user_id || msg.sender_id}: ${msg.content}`} {/* Show sender's ID dynamically */}
           </div>
         ))}
       </div>
@@ -102,6 +166,7 @@ const Chat = ({ senderId, recipientId }) => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}  // Send on Enter key
           placeholder="Type a message..."
           style={styles.chatInput}
         />

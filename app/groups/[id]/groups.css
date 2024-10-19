@@ -574,3 +574,40 @@
     max-height: calc(100vh - 150px); 
     overflow-y: auto;
 }
+.group-chat-button {
+    padding: 10px 20px;
+    background-color: #4267B2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.group-chat-button:hover {
+    background-color: #365899;
+}
+.chatbox-group {
+    width: 350px; /* Adjust the width as needed */
+    height: 400px; /* Adjust the height as needed */
+    position: fixed;
+    top: 70%;      /* Center vertically */
+    left: 10%;     /* Center horizontally */
+    transform: translate(-50%, -50%); /* Ensure perfect centering */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000; /* Ensure it's above other elements */
+    overflow: hidden; /* Prevent overflow */
+}
+
+.chatbox-group .chatMessages {
+    height: calc(100% - 100px); /* Adjust height based on input area */
+    overflow-y: auto;
+}
+
+.chatbox-group .chatInputContainer {
+    padding: 10px;
+    border-top: 1px solid #ddd;
+}

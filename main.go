@@ -58,8 +58,6 @@ func main() {
 
 	// Post routes
 	router.HandleFunc("/posts/user", posts.GetPosts).Methods("GET")
-	    router.HandleFunc("/posts", posts.GetPosts).Methods("GET")  
-
 	router.HandleFunc("/posts", posts.CreatePost).Methods("POST")
 	router.HandleFunc("/posts/comments", posts.CreateComment).Methods("POST")
 
@@ -88,6 +86,7 @@ func main() {
 
 	// Chat routes
 	router.HandleFunc("/ws", chat.HandleConnections)
+	router.HandleFunc("/groupchat", chat.HandleGroupConnections)
 
 	// CORS handler
 	// CORS handler

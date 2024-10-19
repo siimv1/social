@@ -218,74 +218,100 @@ func RequestJoinGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 func AcceptJoinRequest(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	groupID := vars["id"]
+    vars := mux.Vars(r)
+    groupID := vars["id"]
 
-	var requestData struct {
-		UserID int `json:"userId"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+    var requestData struct {
+        UserID int `json:"userId"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+        log.Printf("Failed to decode request body in AcceptJoinRequest: %v", err)
+        http.Error(w, "Invalid request body", http.StatusBadRequest)
+        return
+    }
 
-	_, err := db.DB.Exec("UPDATE join_requests SET status = 'accepted' WHERE group_id = ? AND user_id = ?", groupID, requestData.UserID)
-	if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
+    log.Printf("Attempting to accept join request for Group ID: %s, User ID: %d", groupID, requestData.UserID)
 
-	w.WriteHeader(http.StatusOK)
+    _, err := db.DB.Exec("UPDATE join_requests SET status = 'accepted' WHERE group_id = ? AND user_id = ?", groupID, requestData.UserID)
+    if err != nil {
+        log.Printf("Failed to execute database update in AcceptJoinRequest: %v", err)
+        http.Error(w, "Database error", http.StatusInternalServerError)
+        return
+    }
+
+    log.Printf("Successfully accepted join request for Group ID: %s, User ID: %d", groupID, requestData.UserID)
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"message": "Join request accepted"})
 }
 
 func DenyJoinRequest(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	groupID := vars["id"]
+    vars := mux.Vars(r)
+    groupID := vars["id"]
 
-	var requestData struct {
-		UserID int `json:"userId"`
-	}
+    var requestData struct {
+        UserID int `json:"userId"`
+    }
 
-	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+    if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+        log.Printf("Failed to decode request body in DenyJoinRequest: %v", err)
+        http.Error(w, "Invalid request body", http.StatusBadRequest)
+        return
+    }
 
-	_, err := db.DB.Exec("UPDATE join_requests SET status = 'denied' WHERE group_id = ? AND user_id = ?", groupID, requestData.UserID)
-	if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
+    log.Printf("Attempting to deny join request for Group ID: %s, User ID: %d", groupID, requestData.UserID)
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Denied group join request for group ID " + groupID))
+    _, err := db.DB.Exec("UPDATE join_requests SET status = 'denied' WHERE group_id = ? AND user_id = ?", groupID, requestData.UserID)
+    if err != nil {
+        log.Printf("Failed to execute database update in DenyJoinRequest: %v", err)
+        http.Error(w, "Database error", http.StatusInternalServerError)
+        return
+    }
+
+    log.Printf("Successfully denied join request for Group ID: %s, User ID: %d", groupID, requestData.UserID)
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"message": "Join request denied"})
 }
+
 
 func GetJoinRequests(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	groupID := vars["id"]
-	rows, err := db.DB.Query("SELECT user_id FROM join_requests WHERE group_id = ? AND status = 'pending'", groupID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-	var requests []struct {
-		UserID int `json:"user_id"`
-	}
-	for rows.Next() {
-		var request struct {
-			UserID int `json:"user_id"`
-		}
-		if err := rows.Scan(&request.UserID); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		requests = append(requests, request)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(requests)
+    vars := mux.Vars(r)
+    groupID := vars["id"]
+    
+    rows, err := db.DB.Query("SELECT user_id FROM join_requests WHERE group_id = ? AND status = 'pending'", groupID)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    defer rows.Close()
+
+    var requests []struct {
+        UserID int `json:"user_id"`
+    }
+    for rows.Next() {
+        var request struct {
+            UserID int `json:"user_id"`
+        }
+        if err := rows.Scan(&request.UserID); err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        requests = append(requests, request)
+    }
+
+    // If no join requests are found, return an empty array
+    if len(requests) == 0 {
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode([]struct{}{})  // Return an empty array instead of null
+        return
+    }
+
+    // Send the list of requests as JSON
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(requests)
 }
+
 
 func JoinGroup(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

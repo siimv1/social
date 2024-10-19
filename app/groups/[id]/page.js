@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { apiRequest } from '../../apiclient';
 import Link from 'next/link';
@@ -8,6 +8,7 @@ import './groups.css';
 import CreatePost from '../../posts/CreatePost';
 import PostList from '../../posts/PostList';
 import CreateEvent from './CreateEvent';
+import Chat from '../../chat/Chat'; // Import the Chat component (adjust path as necessary)
 
 const GroupDetail = () => {
     const router = useRouter();
@@ -25,7 +26,7 @@ const GroupDetail = () => {
     const [isMember, setIsMember] = useState(false);
     const [inviteSent, setInviteSent] = useState(false);
     const [eventInvites, setEventInvites] = useState([]);
-    const [showCreateEvent, setShowCreateEvent] = useState(false);
+    const [showChat, setShowChat] = useState(false); // State to toggle chatbox visibility
 
     useEffect(() => {
         const loadSession = async () => {
@@ -41,7 +42,6 @@ const GroupDetail = () => {
                 console.error('Error loading session:', error);
             }
         };
-
         loadSession();
     }, []);
 
@@ -145,11 +145,9 @@ const GroupDetail = () => {
 
         try {
             const response = await apiRequest(`/groups/${group.id}/join-request`, 'POST');
-
             if (response && response.requestPending) {
                 setJoinRequested(true);
             }
-
         } catch (error) {
             console.error('Failed to send join request:', error.message);
         }
@@ -158,11 +156,9 @@ const GroupDetail = () => {
     const loadJoinRequests = async () => {
         try {
             const response = await apiRequest(`/groups/${group.id}/join-requests`, 'GET');
-
+            console.log('Join Requests Response:', response);
             if (response && Array.isArray(response)) {
-                setRequests(response);
-            } else if (response && typeof response === 'object') {
-                setRequests(response.requests || []);
+                setRequests(response);  // Handle the array of join requests
             } else {
                 console.error('Unexpected response format:', response);
             }
@@ -179,8 +175,16 @@ const GroupDetail = () => {
 
     const handleAcceptRequest = async (userId) => {
         try {
-            await apiRequest(`/groups/${group.id}/join-requests/${userId}/accept`, 'POST');
-            loadJoinRequests();
+            const response = await apiRequest(`/groups/${group.id}/join-requests/${userId}/accept`, 'POST', { userId });
+            if (!response) {
+                console.error('Response is null or undefined:', response);
+                return;
+            }
+            if (response.message) {
+                loadJoinRequests();
+            } else {
+                console.error('Unexpected response format:', response);
+            }
         } catch (error) {
             console.error('Failed to accept request:', error);
         }
@@ -188,13 +192,16 @@ const GroupDetail = () => {
 
     const handleDenyRequest = async (userId) => {
         try {
-            await apiRequest(`/groups/${group.id}/join-requests/${userId}/deny`, 'POST');
-            loadJoinRequests();
+            const response = await apiRequest(`/groups/${group.id}/join-requests/${userId}/deny`, 'POST', { userId });
+            if (response && response.message) {
+                loadJoinRequests();
+            } else {
+                console.error('Unexpected response format:', response);
+            }
         } catch (error) {
             console.error('Failed to deny request:', error);
         }
     };
-
 
     const loadEventInvites = async () => {
         try {
@@ -209,9 +216,7 @@ const GroupDetail = () => {
 
     const handleEventCreated = (eventId) => {
         setShowCreateEvent(false);
-
     };
-
 
     const handleAcceptEventInvite = async (inviteId) => {
         try {
@@ -229,6 +234,11 @@ const GroupDetail = () => {
         } catch (error) {
             console.error('Failed to decline event invite:', error);
         }
+    };
+
+    // Toggle chatbox visibility
+    const handleToggleChat = () => {
+        setShowChat((prevShowChat) => !prevShowChat); // Toggle the chatbox visibility
     };
 
     return (
@@ -323,7 +333,6 @@ const GroupDetail = () => {
                 )}
 
                 {/* Events */}
-
                 {(isCreator || isMember) && group && (
                     <CreateEvent
                         groupId={group.id}
@@ -344,6 +353,19 @@ const GroupDetail = () => {
                         ))}
                     </div>
                 )}
+
+                {/* Group Chat Button */}
+                <button onClick={handleToggleChat} className="group-chat-button">
+                    {showChat ? 'Hide Group Chat' : 'Join Group Chat'}
+                </button>
+
+                {/* Chatbox: Conditionally render chatbox */}
+                {showChat && (
+    <div className="chatbox-group"> {/* chatbox-group class */}
+        <Chat senderId={userId} groupId={group.id} isGroupChat={true} />
+    </div>
+)}
+
             </div>
 
             {/* Main Content */}
